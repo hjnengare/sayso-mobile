@@ -6,8 +6,6 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -16,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthSession } from '../../src/hooks/useSession';
 import { useProfile, useUpdateProfile } from '../../src/hooks/useProfile';
+import { Text, TextInput } from '../../src/components/Typography';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuthSession();

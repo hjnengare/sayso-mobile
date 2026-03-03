@@ -5,7 +5,6 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -18,6 +17,7 @@ import { useSaveBusiness, useUnsaveBusiness, useSavedBusinesses } from '../../sr
 import { useAuthSession } from '../../src/hooks/useSession';
 import { StarRating } from '../../src/components/StarRating';
 import { EmptyState } from '../../src/components/EmptyState';
+import { Text } from '../../src/components/Typography';
 
 type Tab = 'overview' | 'reviews';
 

@@ -6,8 +6,6 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -15,6 +13,7 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../../../src/lib/api';
 import { StarRating } from '../../../src/components/StarRating';
+import { Text, TextInput } from '../../../src/components/Typography';
 
 export default function WriteReviewScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

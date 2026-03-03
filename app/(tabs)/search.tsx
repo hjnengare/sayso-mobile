@@ -4,14 +4,13 @@ import {
   FlatList,
   SafeAreaView,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSearch } from '../../src/hooks/useSearch';
 import { BusinessCard } from '../../src/components/BusinessCard';
 import { EmptyState } from '../../src/components/EmptyState';
+import { Text, TextInput } from '../../src/components/Typography';
 
 export default function SearchScreen() {
   const [input, setInput] = useState('');

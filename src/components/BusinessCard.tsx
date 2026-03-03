@@ -1,8 +1,9 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import type { BusinessListItemDto, SavedBusinessDto } from '@sayso/contracts';
+import { Text } from './Typography';
 
 type Props = {
   business: BusinessListItemDto | SavedBusinessDto;

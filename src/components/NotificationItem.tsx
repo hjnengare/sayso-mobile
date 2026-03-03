@@ -1,6 +1,7 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NotificationDto } from '@sayso/contracts';
+import { Text } from './Typography';
 
 const TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   review: 'star-outline',

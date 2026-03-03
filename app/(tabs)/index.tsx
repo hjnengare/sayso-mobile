@@ -3,13 +3,13 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 import { useTrending } from '../../src/hooks/useTrending';
 import { BusinessCard } from '../../src/components/BusinessCard';
 import { SkeletonCard } from '../../src/components/SkeletonCard';
 import { EmptyState } from '../../src/components/EmptyState';
+import { Text } from '../../src/components/Typography';
 
 export default function HomeScreen() {
   const { data, isLoading, isError, refetch, isRefetching } = useTrending(20);

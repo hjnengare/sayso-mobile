@@ -3,7 +3,6 @@ import {
   RefreshControl,
   SafeAreaView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -13,6 +12,7 @@ import { useAuthSession } from '../../src/hooks/useSession';
 import { NotificationItem } from '../../src/components/NotificationItem';
 import { EmptyState } from '../../src/components/EmptyState';
 import { SkeletonCard } from '../../src/components/SkeletonCard';
+import { Text } from '../../src/components/Typography';
 
 export default function NotificationsScreen() {
   const { user } = useAuthSession();

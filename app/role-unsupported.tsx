@@ -1,4 +1,5 @@
-import { SafeAreaView, Text, View } from 'react-native';
+import { SafeAreaView, View } from 'react-native';
+import { Text } from '../src/components/Typography';
 
 export default function RoleUnsupportedScreen() {
   return (
