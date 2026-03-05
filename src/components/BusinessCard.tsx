@@ -1,18 +1,18 @@
-import { memo, useMemo } from 'react';
+import { memo } from 'react';
 import { Platform, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { BusinessListItemDto } from '@sayso/contracts';
-import { formatDistanceAway } from '../lib/distance';
 import { useAuthSession } from '../hooks/useSession';
 import { routes } from '../navigation/routes';
 import { getOverlayShadowStyle } from '../styles/overlayShadow';
+import { CARD_CTA_RADIUS, CARD_RADIUS } from '../styles/radii';
 import { CardSurface } from './CardSurface';
 import { Text } from './Typography';
-import { useBusinessCardLocation, isValidCoordinate } from '../hooks/useBusinessCardLocation';
 import { BusinessCardBadges } from './business-card/BusinessCardBadges';
 import { BusinessCardCategory } from './business-card/BusinessCardCategory';
 import { BusinessCardImage } from './business-card/BusinessCardImage';
 import { BusinessCardPercentiles } from './business-card/BusinessCardPercentiles';
+import { BusinessCardReviewStars } from './business-card/BusinessCardReviewStars';
 import {
   getBusinessIdentifier,
   getDisplayCategoryLabel,
@@ -26,33 +26,17 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
-const ctaShadowStyle = getOverlayShadowStyle(999);
+const ctaShadowStyle = getOverlayShadowStyle(CARD_CTA_RADIUS);
 
 function BusinessCardComponent({ business, style }: Props) {
   const router = useRouter();
   const { user } = useAuthSession();
-  const { status: locationStatus, requestLocation, getDistanceKm } = useBusinessCardLocation();
   const businessIdentifier = getBusinessIdentifier(business);
   const displayCategoryLabel = getDisplayCategoryLabel(business);
   const categorySlug = normalizeCategorySlug(business);
   const { hasRating, displayRating, totalReviews } = normalizeRating(business);
   const { image, isPlaceholder, placeholderImage } = resolveDisplayImage(business);
-  const hasCoordinates = isValidCoordinate(business.lat) && isValidCoordinate(business.lng);
-
-  const distanceBadgeText = useMemo(() => {
-    if (!hasCoordinates) return null;
-
-    if (locationStatus === 'granted') {
-      const distanceKm = getDistanceKm(business.lat as number, business.lng as number);
-      if (distanceKm === null) return 'Calculating...';
-      return formatDistanceAway(distanceKm);
-    }
-
-    if (locationStatus === 'loading') return 'Calculating...';
-    if (locationStatus === 'denied') return 'Location off';
-
-    return 'Enable location';
-  }, [business.lat, business.lng, getDistanceKm, hasCoordinates, locationStatus]);
+  const isFeaturedCard = String(business.badge ?? '').toLowerCase() === 'featured';
 
   const handleReviewPress = () => {
     if (!user) {
@@ -65,7 +49,7 @@ function BusinessCardComponent({ business, style }: Props) {
 
   return (
     <CardSurface
-      radius={24}
+      radius={CARD_RADIUS}
       material="frosted"
       style={style}
       contentStyle={Platform.OS !== 'web' ? styles.frostedSurface : undefined}
@@ -78,14 +62,6 @@ function BusinessCardComponent({ business, style }: Props) {
           verified={business.verified}
           hasRating={hasRating}
           rating={displayRating}
-          distanceBadgeText={distanceBadgeText}
-          onPressDistance={
-            hasCoordinates && locationStatus !== 'granted'
-              ? () => {
-                  void requestLocation();
-                }
-              : undefined
-          }
         />
       </View>
 
@@ -98,17 +74,14 @@ function BusinessCardComponent({ business, style }: Props) {
           subInterestId={business.sub_interest_id ?? business.subInterestId ?? categorySlug}
           subInterestLabel={business.subInterestLabel ?? displayCategoryLabel}
         />
-        {business.location ? (
-          <Text style={styles.location} numberOfLines={1}>
-            {business.location}
-          </Text>
-        ) : null}
-        {hasRating ? (
-          <Text style={styles.reviewCount}>
-            {`${totalReviews} ${totalReviews === 1 ? 'Review' : 'Reviews'}`}
-          </Text>
-        ) : null}
-        <BusinessCardPercentiles percentiles={business.percentiles} />
+        <Text style={[styles.reviewCount, !hasRating || totalReviews <= 0 ? styles.reviewCountEmpty : null]}>
+          {hasRating && totalReviews > 0 ? `${totalReviews} Reviews` : 'Be the first to review'}
+        </Text>
+        {isFeaturedCard ? (
+          <BusinessCardReviewStars rating={hasRating ? displayRating : 0} />
+        ) : (
+          <BusinessCardPercentiles percentiles={business.percentiles} />
+        )}
 
         <Pressable
           style={({ pressed }) => [styles.reviewButton, ctaShadowStyle, pressed ? styles.reviewButtonPressed : null]}
@@ -133,12 +106,12 @@ export const BusinessCard = memo(
 
 const styles = StyleSheet.create({
   frostedSurface: {
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: 'rgba(157,171,155,0.72)',
     borderColor: 'rgba(255,255,255,0.34)',
   },
   media: {
     width: '100%',
-    height: 208,
+    height: 220,
     backgroundColor: '#F3F4F6',
   },
   body: {
@@ -148,7 +121,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   bodyFrosted: {
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(157,171,155,0.32)',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.34)',
   },
@@ -160,12 +133,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     width: '100%',
   },
-  location: {
-    fontSize: 12,
-    color: '#6B7280',
-    textAlign: 'center',
-    marginTop: 7,
-  },
   reviewCount: {
     fontSize: 13,
     fontWeight: '700',
@@ -173,10 +140,14 @@ const styles = StyleSheet.create({
     marginTop: 9,
     textAlign: 'center',
   },
+  reviewCountEmpty: {
+    fontWeight: '400',
+    color: 'rgba(45, 55, 72, 0.85)',
+  },
   reviewButton: {
     marginTop: 12,
     minHeight: 46,
-    borderRadius: 999,
+    borderRadius: CARD_CTA_RADIUS,
     backgroundColor: '#722F37',
     width: '100%',
     alignItems: 'center',

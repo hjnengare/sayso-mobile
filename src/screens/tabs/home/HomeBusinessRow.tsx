@@ -4,6 +4,7 @@ import { BusinessCard } from '../../../components/BusinessCard';
 import { Text } from '../../../components/Typography';
 import { SkeletonCard } from '../../../components/SkeletonCard';
 import { homeTokens } from './HomeTokens';
+import { CARD_RADIUS } from '../../../styles/radii';
 
 type Props<T extends BusinessListItemDto | FeaturedBusinessDto> = {
   items: T[];
@@ -79,7 +80,7 @@ const styles = StyleSheet.create({
     backgroundColor: homeTokens.offWhite,
   },
   content: {
-    paddingHorizontal: 16,
+    paddingHorizontal: homeTokens.pageGutter,
     paddingTop: 4,
     gap: 14,
     backgroundColor: homeTokens.offWhite,
@@ -88,12 +89,12 @@ const styles = StyleSheet.create({
     width: 320,
   },
   messageCard: {
-    marginHorizontal: 16,
+    marginHorizontal: homeTokens.pageGutter,
     padding: 20,
-    borderRadius: 22,
+    borderRadius: CARD_RADIUS,
     borderWidth: 1,
     borderColor: homeTokens.borderSoft,
-    backgroundColor: homeTokens.white,
+    backgroundColor: homeTokens.cardBg,
   },
   messageTitle: {
     fontSize: 16,
@@ -103,7 +104,7 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: 14,
     lineHeight: 20,
-    color: homeTokens.textSecondary,
+    color: 'rgba(45,55,72,0.9)',
     marginTop: 6,
   },
 });

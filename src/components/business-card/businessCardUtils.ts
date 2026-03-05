@@ -60,8 +60,15 @@ export function normalizeRating(business: BusinessListItemDto) {
       : undefined) ??
     (typeof business.rating === 'number' && Number.isFinite(business.rating) ? business.rating : undefined) ??
     0;
+  const featuredReviewCount =
+    typeof (business as { reviewCount?: number }).reviewCount === 'number' &&
+    Number.isFinite((business as { reviewCount?: number }).reviewCount)
+      ? (business as { reviewCount?: number }).reviewCount
+      : undefined;
   const totalReviews =
-    typeof business.reviews === 'number' && Number.isFinite(business.reviews) ? business.reviews : 0;
+    (typeof business.reviews === 'number' && Number.isFinite(business.reviews) ? business.reviews : undefined) ??
+    featuredReviewCount ??
+    0;
   const hasRating = rawRating > 0;
 
   return {

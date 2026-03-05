@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { CardSurface } from './CardSurface';
+import { CARD_RADIUS } from '../styles/radii';
 
 type Props = {
   style?: StyleProp<ViewStyle>;
@@ -20,7 +21,7 @@ export function EventCardSkeleton({ style }: Props) {
 
   return (
     <Animated.View style={[style, { opacity }]}>
-      <CardSurface radius={24}>
+      <CardSurface radius={CARD_RADIUS}>
         <View style={styles.media}>
           <View style={styles.ribbon} />
           <View style={styles.ratingBadge} />
@@ -43,7 +44,7 @@ export function EventCardSkeleton({ style }: Props) {
 
 const styles = StyleSheet.create({
   media: {
-    height: 208,
+    height: 220,
     backgroundColor: '#E2E8F0',
   },
   ribbon: {

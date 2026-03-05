@@ -1,6 +1,7 @@
 import { SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Text } from '../../components/Typography';
+import { CARD_CTA_RADIUS, CARD_RADIUS } from '../../styles/radii';
 
 type Action = {
   label: string;
@@ -42,7 +43,7 @@ export function PlaceholderScreen({ title, description, actions = [] }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#E5E0E5',
   },
   content: {
     padding: 20,
@@ -50,7 +51,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: CARD_RADIUS,
     padding: 20,
     borderWidth: 1,
     borderColor: '#E5E7EB',
@@ -68,7 +69,7 @@ const styles = StyleSheet.create({
   },
   action: {
     backgroundColor: '#111827',
-    borderRadius: 14,
+    borderRadius: CARD_CTA_RADIUS,
     paddingHorizontal: 16,
     paddingVertical: 14,
   },

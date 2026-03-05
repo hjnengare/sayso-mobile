@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Platform, StyleSheet, View } from 'react-native';
 import { CardSurface } from './CardSurface';
+import { CARD_RADIUS } from '../styles/radii';
 
 export function SkeletonCard() {
   const opacity = useRef(new Animated.Value(0.4)).current;
@@ -16,7 +17,7 @@ export function SkeletonCard() {
 
   return (
     <Animated.View style={{ opacity }}>
-      <CardSurface radius={24}>
+      <CardSurface radius={CARD_RADIUS}>
         <View style={styles.image} />
         <View style={styles.body}>
           <View style={styles.titleLine} />
@@ -31,7 +32,7 @@ export function SkeletonCard() {
 const styles = StyleSheet.create({
   image: {
     width: '100%',
-    height: 208,
+    height: 220,
     backgroundColor: '#E5E7EB',
   },
   body: {

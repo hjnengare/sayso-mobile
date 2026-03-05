@@ -1,5 +1,15 @@
-import BusinessScreen from '../../../../src/screens/stack/BusinessScreen';
+import { useEffect } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { routes } from '../../../../src/navigation/routes';
 
 export default function BusinessReviewsRoute() {
-  return <BusinessScreen initialTab="reviews" />;
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!id) return;
+    router.replace(routes.businessReviewForm(id) as never);
+  }, [id, router]);
+
+  return null;
 }

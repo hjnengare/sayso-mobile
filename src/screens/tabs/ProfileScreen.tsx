@@ -204,13 +204,13 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF' },
+  container: { flex: 1, backgroundColor: '#E5E0E5' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   sub: { fontSize: 15, color: '#6B7280', marginTop: 8 },
   btn: {
     marginTop: 20,
     backgroundColor: '#111827',
-    borderRadius: 12,
+    borderRadius: 999,
     paddingHorizontal: 24,
     paddingVertical: 12,
   },
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#FEE2E2',
-    borderRadius: 12,
+    borderRadius: 999,
     paddingVertical: 14,
     backgroundColor: '#FFF9F9',
   },

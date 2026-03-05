@@ -1,4 +1,5 @@
 import { StyleSheet, View } from 'react-native';
+import { NAVBAR_BG_90 } from '../../styles/colors';
 import { getOverlayShadowStyle } from '../../styles/overlayShadow';
 import { Text } from '../Typography';
 import type { EventCountdownState } from './eventCardUtils';
@@ -39,14 +40,14 @@ const styles = StyleSheet.create({
     left: 14,
     bottom: 14,
     borderRadius: 999,
-    backgroundColor: 'rgba(247, 250, 252, 0.94)',
+    backgroundColor: NAVBAR_BG_90,
     paddingHorizontal: 12,
     paddingVertical: 7,
   },
   label: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#2D3748',
+    color: '#FFFFFF',
     letterSpacing: 0.2,
   },
 });

@@ -82,7 +82,7 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: '#E5E0E5' },
   content: { padding: 20, gap: 12 },
   title: { fontSize: 28, fontWeight: '800', color: '#111827' },
   subtitle: { fontSize: 15, lineHeight: 22, color: '#6B7280', marginBottom: 8 },
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   primaryButton: {
     marginTop: 8,
     backgroundColor: '#1A1A1A',
-    borderRadius: 12,
+    borderRadius: 999,
     padding: 12,
   },
   primaryButtonText: {
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     backgroundColor: '#F4F4F4',
-    borderRadius: 12,
+    borderRadius: 999,
     padding: 12,
     borderWidth: 1,
     borderColor: '#E2E2E2',

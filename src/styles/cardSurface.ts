@@ -1,8 +1,9 @@
 import type { ViewStyle } from 'react-native';
+import { CARD_BG_COLOR } from './colors';
 
-export const CARD_BACKGROUND_COLOR = '#FFFFFF';
+export const CARD_BACKGROUND_COLOR = CARD_BG_COLOR;
 export const CARD_BORDER_COLOR = 'rgba(0,0,0,0.04)';
-export const FROSTED_CARD_BACKGROUND_COLOR = 'rgba(255,255,255,0.78)';
+export const FROSTED_CARD_BACKGROUND_COLOR = 'rgba(157,171,155,0.78)';
 export const FROSTED_CARD_BORDER_COLOR = 'rgba(255,255,255,0.32)';
 export const WEB_CARD_SHADOW_REST =
   '0 2px 8px rgba(0,0,0,0.04), 0 12px 24px rgba(0,0,0,0.06)';

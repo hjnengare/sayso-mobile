@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import type { EventSpecialListItemDto } from '@sayso/contracts';
 import { CardSurface } from './CardSurface';
 import { getOverlayShadowStyle } from '../styles/overlayShadow';
+import { CARD_CTA_RADIUS, CARD_RADIUS } from '../styles/radii';
 import { Text } from './Typography';
 import { EventCardImage } from './event-card/EventCardImage';
 import { EventCountdownBadge } from './event-card/EventCountdownBadge';
@@ -25,7 +26,7 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
-const ctaShadowStyle = getOverlayShadowStyle(999);
+const ctaShadowStyle = getOverlayShadowStyle(CARD_CTA_RADIUS);
 
 function EventCardComponent({ item, style }: Props) {
   const router = useRouter();
@@ -47,7 +48,7 @@ function EventCardComponent({ item, style }: Props) {
 
   return (
     <CardSurface
-      radius={24}
+      radius={CARD_RADIUS}
       material="frosted"
       style={style}
       interactive
@@ -72,11 +73,9 @@ function EventCardComponent({ item, style }: Props) {
 
         <EventStatusPills item={item} />
 
-        {hasRating && reviews > 0 ? (
-          <Text style={styles.reviewCount}>
-            {`${reviews} ${reviews === 1 ? 'Review' : 'Reviews'}`}
-          </Text>
-        ) : null}
+        <Text style={[styles.reviewCount, !hasRating || reviews <= 0 ? styles.reviewCountEmpty : null]}>
+          {hasRating && reviews > 0 ? `${reviews} Reviews` : 'Be the first to review'}
+        </Text>
 
         <View style={[styles.ctaButton, ctaShadowStyle]} pointerEvents="none">
           <Text style={styles.ctaText}>{detailLabel}</Text>
@@ -95,7 +94,7 @@ const styles = StyleSheet.create({
   media: {
     position: 'relative',
     width: '100%',
-    height: 208,
+    height: 220,
     backgroundColor: '#F7FAFC',
   },
   mediaOverlay: {
@@ -126,10 +125,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 10,
   },
+  reviewCountEmpty: {
+    fontWeight: '400',
+    color: 'rgba(45, 55, 72, 0.85)',
+  },
   ctaButton: {
     marginTop: 12,
     minHeight: 46,
-    borderRadius: 999,
+    borderRadius: CARD_CTA_RADIUS,
     backgroundColor: '#722F37',
     alignItems: 'center',
     justifyContent: 'center',

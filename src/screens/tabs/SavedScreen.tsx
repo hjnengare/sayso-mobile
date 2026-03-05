@@ -85,7 +85,7 @@ export default function SavedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#E5E0E5',
   },
   list: {
     padding: 16,
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
     paddingHorizontal: 12,
     paddingVertical: 5,
-    borderRadius: 8,
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     backgroundColor: '#FFF',

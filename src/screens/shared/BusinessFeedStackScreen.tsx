@@ -20,6 +20,6 @@ export function BusinessFeedStackScreen({ title, subtitle, count }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#E5E0E5',
   },
 });

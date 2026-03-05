@@ -4,6 +4,7 @@ import { routes } from '../../navigation/routes';
 import { AppHeader } from '../../components/AppHeader';
 import { CardSurface } from '../../components/CardSurface';
 import { Text } from '../../components/Typography';
+import { CARD_RADIUS } from '../../styles/radii';
 
 const groups = [
   {
@@ -40,7 +41,7 @@ export default function ExploreHubScreen() {
               {group.items.map((item) => (
                 <CardSurface
                   key={item.href}
-                  radius={18}
+                  radius={CARD_RADIUS}
                   style={styles.card}
                   contentStyle={styles.cardContent}
                   interactive
@@ -61,7 +62,7 @@ export default function ExploreHubScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#E5E0E5',
   },
   content: {
     paddingBottom: 24,

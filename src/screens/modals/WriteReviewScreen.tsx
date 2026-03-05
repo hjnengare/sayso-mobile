@@ -14,6 +14,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api';
 import { StarRating } from '../../components/StarRating';
 import { Text, TextInput } from '../../components/Typography';
+import { useBusinessDetail } from '../../hooks/useBusinessDetail';
 import type { WriteReviewParams } from '../../navigation/types';
 
 const REVIEW_TITLES: Record<WriteReviewParams['type'], string> = {
@@ -32,6 +33,8 @@ export default function WriteReviewScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   const isBusinessReview = type === 'business';
+  const { data: businessDetail } = useBusinessDetail(isBusinessReview ? id : '');
+  const resolvedBusinessId = businessDetail?.id ?? id;
   const title = useMemo(() => REVIEW_TITLES[type] ?? 'Write a Review', [type]);
   const canSubmit = rating > 0 && !submitting && isBusinessReview;
 
@@ -42,10 +45,10 @@ export default function WriteReviewScreen() {
     try {
       await apiFetch('/api/user/reviews', {
         method: 'POST',
-        body: JSON.stringify({ business_id: id, rating, body: body.trim() || undefined }),
+        body: JSON.stringify({ business_id: resolvedBusinessId, rating, body: body.trim() || undefined }),
       });
-      qc.invalidateQueries({ queryKey: ['business-reviews', id] });
-      qc.invalidateQueries({ queryKey: ['business', id] });
+      qc.invalidateQueries({ queryKey: ['business-reviews', resolvedBusinessId] });
+      qc.invalidateQueries({ queryKey: ['business', resolvedBusinessId] });
       Alert.alert('Thanks', 'Your review has been submitted.', [
         { text: 'OK', onPress: () => router.back() },
       ]);
@@ -115,7 +118,7 @@ export default function WriteReviewScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF' },
+  container: { flex: 1, backgroundColor: '#E5E0E5' },
   content: { padding: 24, gap: 8 },
   notice: {
     backgroundColor: '#F9FAFB',
@@ -145,7 +148,7 @@ const styles = StyleSheet.create({
   submitBtn: {
     marginTop: 24,
     backgroundColor: '#111827',
-    borderRadius: 14,
+    borderRadius: 999,
     paddingVertical: 16,
     alignItems: 'center',
   },

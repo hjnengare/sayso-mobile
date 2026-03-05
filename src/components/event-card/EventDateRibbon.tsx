@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import { FROSTED_CARD_BORDER_COLOR } from '../../styles/cardSurface';
+import { NAVBAR_BG_90 } from '../../styles/colors';
 import { getOverlayShadowStyle } from '../../styles/overlayShadow';
 import { Text } from '../Typography';
 
@@ -39,7 +40,7 @@ const styles = StyleSheet.create({
     width: 228,
     paddingVertical: 7,
     paddingHorizontal: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: NAVBAR_BG_90,
     borderWidth: 1,
     borderColor: FROSTED_CARD_BORDER_COLOR,
     transform: [{ rotate: '-44deg' }],
@@ -49,9 +50,9 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#111827',
+    color: '#FFFFFF',
     letterSpacing: 0.3,
-    textShadowColor: 'rgba(255, 255, 255, 0.9)',
+    textShadowColor: 'rgba(0, 0, 0, 0.35)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 6,
   },

@@ -16,6 +16,7 @@ import type { FeaturedBusinessDto, TopReviewerDto } from '@sayso/contracts';
 import { CardSurface } from '../../components/CardSurface';
 import { HeaderBellButton } from '../../components/HeaderBellButton';
 import { Text } from '../../components/Typography';
+import { MapPreviewHero } from '../../components/home/MapPreviewHero';
 import { useEventsSpecialsPreview } from '../../hooks/useEventsSpecialsPreview';
 import { useFeaturedBusinesses } from '../../hooks/useFeaturedBusinesses';
 import { useForYouBusinesses } from '../../hooks/useForYou';
@@ -34,8 +35,9 @@ import { HomeSectionHeader } from './home/HomeSectionHeader';
 import { homeTokens } from './home/HomeTokens';
 import { FROSTED_CARD_BORDER_COLOR } from '../../styles/cardSurface';
 import { getOverlayShadowStyle } from '../../styles/overlayShadow';
+import { CARD_CTA_RADIUS, CARD_RADIUS } from '../../styles/radii';
 
-const ctaShadowStyle = getOverlayShadowStyle(999);
+const ctaShadowStyle = getOverlayShadowStyle(CARD_CTA_RADIUS);
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -304,6 +306,8 @@ export default function HomeScreen() {
           onScroll={handleScroll}
           scrollEventThrottle={16}
         >
+          <MapPreviewHero />
+
           <View style={styles.section}>
             <HomeSectionHeader
               title="For You"
@@ -313,7 +317,7 @@ export default function HomeScreen() {
 
             {!user ? (
               <CardSurface
-                radius={28}
+                radius={CARD_RADIUS}
                 style={styles.guestCardWrap}
                 contentStyle={styles.guestCardSurface}
               >
@@ -404,6 +408,7 @@ export default function HomeScreen() {
 
           <HomeCommunityHighlightsSection
             reviewers={reviewers.reviewers}
+            reviewersMode={reviewers.mode}
             recentReviews={recentReviews.reviews}
             reviewersLoading={reviewers.isLoading || recentReviews.isLoading}
             reviewersError={reviewers.error ?? recentReviews.error}
@@ -412,6 +417,7 @@ export default function HomeScreen() {
             featuredError={featured.error}
             onPressContributors={() => router.push(routes.leaderboard('contributors') as never)}
             onPressFeatured={() => router.push(routes.leaderboard('businesses') as never)}
+            onPressBadges={() => router.push(routes.badges() as never)}
             onPressReviewer={navigateToReviewer}
           />
         </Animated.ScrollView>
@@ -432,7 +438,7 @@ const styles = StyleSheet.create({
   },
   headerMaterial: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: homeTokens.coral,
     borderBottomWidth: 1,
     borderBottomColor: FROSTED_CARD_BORDER_COLOR,
   },
@@ -484,14 +490,14 @@ const styles = StyleSheet.create({
     backgroundColor: homeTokens.offWhite,
   },
   guestCardWrap: {
-    marginHorizontal: 16,
+    marginHorizontal: homeTokens.pageGutter,
   },
   guestCardSurface: {
     borderWidth: 0,
     backgroundColor: 'transparent',
   },
   guestCard: {
-    borderRadius: 28,
+    borderRadius: CARD_RADIUS,
     padding: 20,
   },
   guestBadge: {
@@ -519,7 +525,7 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   primaryGuestButton: {
-    borderRadius: 999,
+    borderRadius: CARD_CTA_RADIUS,
     paddingVertical: 14,
     paddingHorizontal: 18,
     backgroundColor: homeTokens.white,
@@ -531,7 +537,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   secondaryGuestButton: {
-    borderRadius: 999,
+    borderRadius: CARD_CTA_RADIUS,
     paddingVertical: 14,
     paddingHorizontal: 18,
     backgroundColor: 'rgba(255,255,255,0.12)',
@@ -545,12 +551,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   messageCard: {
-    marginHorizontal: 16,
+    marginHorizontal: homeTokens.pageGutter,
     padding: 20,
-    borderRadius: 22,
+    borderRadius: CARD_RADIUS,
     borderWidth: 1,
     borderColor: homeTokens.borderSoft,
-    backgroundColor: homeTokens.white,
+    backgroundColor: homeTokens.cardBg,
   },
   messageTitle: {
     fontSize: 16,
@@ -560,7 +566,7 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: 14,
     lineHeight: 20,
-    color: homeTokens.textSecondary,
+    color: 'rgba(45,55,72,0.9)',
     marginTop: 6,
   },
 });

@@ -1,6 +1,7 @@
 import { SafeAreaView, ScrollView, StyleSheet, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { Text } from '../../components/Typography';
+import { CARD_RADIUS } from '../../styles/radii';
 
 type Props = {
   title: string;
@@ -29,7 +30,7 @@ export function StaticContentScreen({ title, sections }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#E5E0E5',
   },
   content: {
     padding: 20,
@@ -37,7 +38,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: CARD_RADIUS,
     padding: 20,
     gap: 10,
     borderWidth: 1,

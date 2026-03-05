@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   clearButton: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: homeTokens.offWhite,

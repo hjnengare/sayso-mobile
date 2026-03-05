@@ -4,6 +4,8 @@ import { Platform, StyleSheet, View } from 'react-native';
 import { useNotifications } from '../../src/hooks/useNotifications';
 import { FROSTED_CARD_BORDER_COLOR } from '../../src/styles/cardSurface';
 
+const NAVBAR_BG_COLOR = '#722F37';
+
 export default function TabsLayout() {
   const { unreadCount } = useNotifications();
   const isWeb = Platform.OS === 'web';
@@ -12,8 +14,9 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#111827',
-        tabBarInactiveTintColor: '#9CA3AF',
+        sceneStyle: { backgroundColor: '#E5E0E5' },
+        tabBarActiveTintColor: '#FFFFFF',
+        tabBarInactiveTintColor: 'rgba(255,255,255,0.72)',
         tabBarStyle: isWeb ? styles.webTabBar : styles.nativeTabBar,
         tabBarBackground: isWeb ? undefined : () => <View style={styles.nativeTabBarBackground} />,
       }}
@@ -30,7 +33,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="search/index"
         options={{
-          title: 'Search',
+          title: 'Leaderboard',
+          href: '/leaderboard',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? 'trophy' : 'trophy-outline'} color={color} size={size} />
           ),
@@ -61,7 +65,8 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   webTabBar: {
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#5C252B',
+    backgroundColor: NAVBAR_BG_COLOR,
   },
   nativeTabBar: {
     borderTopWidth: 0,
@@ -71,7 +76,7 @@ const styles = StyleSheet.create({
   },
   nativeTabBarBackground: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: NAVBAR_BG_COLOR,
     borderTopWidth: 1,
     borderTopColor: FROSTED_CARD_BORDER_COLOR,
     shadowColor: '#000',

@@ -1,4 +1,5 @@
 export const homeTokens = {
+  pageGutter: 8,
   sage: '#7D9B76',
   sageDark: '#6B8A64',
   sageLight: '#8FAA88',
@@ -7,7 +8,8 @@ export const homeTokens = {
   coralLight: '#8B3F47',
   charcoal: '#2D3748',
   lightGray: '#E2E8F0',
-  offWhite: '#F7FAFC',
+  offWhite: '#E5E0E5',
+  cardBg: '#9DAB9B',
   white: '#FFFFFF',
   textSecondary: 'rgba(45, 55, 72, 0.7)',
   textTertiary: 'rgba(45, 55, 72, 0.5)',
