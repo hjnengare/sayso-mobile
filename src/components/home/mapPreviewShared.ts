@@ -10,6 +10,7 @@ export type MapPin = {
   id: string;
   lat: number;
   lng: number;
+  businessId?: string;
 };
 
 export type MapRegion = {
@@ -62,6 +63,8 @@ export const MAX_PINS = 6;
 export const MAP_QUERY_STALE_TIME_MS = 60_000;
 export const MAP_LATITUDE_DELTA = 0.075;
 export const MAP_LONGITUDE_DELTA = 0.11;
+const WEB_MERCATOR_TILE_SIZE = 512;
+const MAX_WEB_MERCATOR_LAT = 85.05112878;
 
 export const MAPBOX_ACCESS_TOKEN = (process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN || '').trim();
 export const MAPBOX_WEB_PIN_URL = (process.env.EXPO_PUBLIC_MAPBOX_WEB_PIN_URL || '').trim();
@@ -89,7 +92,14 @@ function normalizePinRecord(record: NearbyApiPin, fallbackIndex: number): MapPin
         ? String(record.id)
         : `map-pin-${fallbackIndex}`;
 
-  return { id: idValue, lat, lng };
+  const businessId =
+    typeof record.id === 'string' && record.id.trim().length > 0
+      ? record.id
+      : typeof record.id === 'number'
+        ? String(record.id)
+        : undefined;
+
+  return { id: idValue, lat, lng, businessId };
 }
 
 function dedupePins(pins: MapPin[]) {
@@ -198,6 +208,52 @@ export function getMapRegion(center: MapCenter): MapRegion {
     latitudeDelta: MAP_LATITUDE_DELTA,
     longitudeDelta: MAP_LONGITUDE_DELTA,
   };
+}
+
+type ProjectedMarker = {
+  id: string;
+  businessId: string | undefined;
+  leftPercent: number;
+  topPercent: number;
+};
+
+function clampLatitude(lat: number) {
+  return Math.max(-MAX_WEB_MERCATOR_LAT, Math.min(MAX_WEB_MERCATOR_LAT, lat));
+}
+
+function projectMercator(lat: number, lng: number, zoom: number) {
+  const size = WEB_MERCATOR_TILE_SIZE * 2 ** zoom;
+  const latitude = clampLatitude(lat);
+  const sin = Math.sin((latitude * Math.PI) / 180);
+  const x = ((lng + 180) / 360) * size;
+  const y = (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * size;
+  return { x, y };
+}
+
+export function getStaticPreviewMarkerPositions(center: MapCenter, pins: MapPin[]): ProjectedMarker[] {
+  const centerPoint = projectMercator(center.lat, center.lng, MAP_ZOOM);
+  const projected = pins
+    .map((pin) => {
+      const point = projectMercator(pin.lat, pin.lng, MAP_ZOOM);
+      const pixelX = MAP_PREVIEW_WIDTH / 2 + (point.x - centerPoint.x);
+      const pixelY = MAP_PREVIEW_HEIGHT / 2 + (point.y - centerPoint.y);
+      const leftPercent = (pixelX / MAP_PREVIEW_WIDTH) * 100;
+      const topPercent = (pixelY / MAP_PREVIEW_HEIGHT) * 100;
+
+      if (leftPercent < -5 || leftPercent > 105 || topPercent < -5 || topPercent > 105) {
+        return null;
+      }
+
+      return {
+        id: pin.id,
+        businessId: pin.businessId,
+        leftPercent,
+        topPercent,
+      };
+    })
+    .filter((marker): marker is NonNullable<typeof marker> => marker !== null);
+
+  return projected;
 }
 
 export async function fetchTrendingNearbyPins(center: MapCenter) {

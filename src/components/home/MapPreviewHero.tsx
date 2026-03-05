@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery } from '@tanstack/react-query';
 import MapView, { Marker, UrlTile } from 'react-native-maps';
+import { routes } from '../../navigation/routes';
 import { homeTokens } from '../../screens/tabs/home/HomeTokens';
 import { Text } from '../Typography';
 import {
@@ -23,6 +24,7 @@ type Props = {
 export function MapPreviewHero({ style }: Props) {
   const router = useRouter();
   const mapRef = useRef<MapView | null>(null);
+  const lastMarkerPressAt = useRef(0);
   const [center, setCenter] = useState<MapCenter>(CAPE_TOWN_CENTER);
   const [mapReady, setMapReady] = useState(false);
 
@@ -61,6 +63,7 @@ export function MapPreviewHero({ style }: Props) {
     queryKey: ['home-map-preview-nearby', center.lat, center.lng],
     queryFn: () => fetchTrendingNearbyPins(center),
     staleTime: MAP_QUERY_STALE_TIME_MS,
+    placeholderData: (previousData) => previousData,
   });
 
   const pins = useMemo(() => nearbyQuery.data ?? [], [nearbyQuery.data]);
@@ -102,21 +105,34 @@ export function MapPreviewHero({ style }: Props) {
   }, [mapPins, mapReady, mapRegion.latitudeDelta, mapRegion.longitudeDelta]);
 
   const handleOpenMap = useCallback(() => {
+    if (Date.now() - lastMarkerPressAt.current < 300) {
+      return;
+    }
     router.push('/explore/map');
   }, [router]);
 
+  const handleMarkerPress = useCallback(
+    (businessId?: string) => {
+      if (!businessId) {
+        return;
+      }
+      lastMarkerPressAt.current = Date.now();
+      router.push(routes.businessDetail(businessId) as never);
+    },
+    [router]
+  );
+
   return (
-    <Pressable
-      accessibilityRole="button"
+    <View
+      accessible
       accessibilityLabel="Explore places near you on the map"
-      onPress={handleOpenMap}
-      style={({ pressed }) => [styles.container, style, pressed ? styles.containerPressed : null]}
+      style={[styles.container, style]}
     >
       <View style={styles.mapWrap}>
         <View style={styles.mapBase} />
 
         {nativeMapboxTileUrl ? (
-          <View pointerEvents="none" style={styles.nativeMapWrap}>
+          <View style={styles.nativeMapWrap}>
             <MapView
               ref={mapRef}
               style={styles.nativeMap}
@@ -129,6 +145,7 @@ export function MapPreviewHero({ style }: Props) {
               moveOnMarkerPress={false}
               toolbarEnabled={false}
               onMapReady={() => setMapReady(true)}
+              onPress={handleOpenMap}
             >
               <UrlTile urlTemplate={nativeMapboxTileUrl} maximumZ={20} tileSize={512} zIndex={-1} />
               {mapPins.map((pin) => (
@@ -139,7 +156,8 @@ export function MapPreviewHero({ style }: Props) {
                     longitude: pin.lng,
                   }}
                   anchor={{ x: 0.5, y: 1 }}
-                  tracksViewChanges={false}
+                  tracksViewChanges
+                  onPress={() => handleMarkerPress(pin.businessId)}
                 >
                   <View style={styles.pinMarkerWrap}>
                     <View style={styles.pinAura} />
@@ -161,13 +179,17 @@ export function MapPreviewHero({ style }: Props) {
           <Text style={styles.liveBadgeText}>Live Nearby</Text>
         </View>
 
-        <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.55)']} style={styles.bottomGradient} />
+        <LinearGradient
+          pointerEvents="none"
+          colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.55)']}
+          style={styles.bottomGradient}
+        />
 
-        <View style={styles.copyWrap}>
+        <View pointerEvents="none" style={styles.copyWrap}>
           <Text style={styles.title}>Explore places near you</Text>
         </View>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
@@ -181,9 +203,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(45,55,72,0.12)',
     backgroundColor: '#CED7E2',
-  },
-  containerPressed: {
-    opacity: 0.96,
   },
   mapWrap: {
     flex: 1,
