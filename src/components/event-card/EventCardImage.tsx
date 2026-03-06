@@ -31,7 +31,7 @@ function EventCardImageComponent({ imageUri, isFallbackArtwork }: Props) {
         />
       ) : (
         <View style={styles.fallbackState}>
-          <Ionicons name="calendar-outline" size={36} color="rgba(45, 55, 72, 0.45)" />
+          <Ionicons name="calendar" size={36} color="rgba(45, 55, 72, 0.45)" />
         </View>
       )}
     </View>

@@ -1,11 +1,15 @@
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  ActivityIndicator,
+  Animated,
+  Easing,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   SafeAreaView,
   ScrollView,
-  Share,
   StyleSheet,
   View,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { EmptyState } from '../../components/EmptyState';
@@ -21,8 +25,12 @@ import {
   BusinessLocationCard,
   BusinessOwnedEventsSection,
   BusinessPageHeader,
+  BusinessPerformanceInsightsCard,
   BusinessPhotoGrid,
   BusinessReviewsSection,
+  BusinessScreenSkeleton,
+  ContactBusinessModal,
+  type BusinessHeaderMenuItem,
   PersonalizationInsightsCard,
   SimilarBusinessesSection,
 } from '../../components/business-detail';
@@ -34,13 +42,8 @@ import {
   normalizeLocationText,
 } from '../../components/business-detail/utils';
 import { useBusinessDetail } from '../../hooks/useBusinessDetail';
-import {
-  useSaveBusiness,
-  useSavedBusinesses,
-  useUnsaveBusiness,
-} from '../../hooks/useSavedBusinesses';
+import { useGlobalScrollToTop } from '../../hooks/useGlobalScrollToTop';
 import { useAuthSession } from '../../hooks/useSession';
-import { ENV } from '../../lib/env';
 import { routes } from '../../navigation/routes';
 import { businessDetailColors, businessDetailSpacing } from '../../components/business-detail/styles';
 
@@ -48,21 +51,52 @@ type Props = {
   initialTab?: 'overview' | 'reviews';
 };
 
+type RevealBlockProps = {
+  children: ReactNode;
+  delay?: number;
+  style?: StyleProp<ViewStyle>;
+};
+
+function RevealBlock({ children, delay = 0, style }: RevealBlockProps) {
+  const anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 440,
+        easing: Easing.out(Easing.back(1.08)),
+        useNativeDriver: true,
+      }).start();
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+      anim.stopAnimation();
+    };
+  }, [anim, delay]);
+
+  return (
+    <Animated.View
+      style={[
+        style,
+        {
+          opacity: anim,
+          transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }],
+        },
+      ]}
+    >
+      {children}
+    </Animated.View>
+  );
+}
+
 export default function BusinessScreen({ initialTab }: Props) {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuthSession();
 
   const { data: business, isLoading, isError } = useBusinessDetail(id);
-  const { data: savedData } = useSavedBusinesses();
-  const saveMutation = useSaveBusiness();
-  const unsaveMutation = useUnsaveBusiness();
-
-  const isSaved = useMemo(() => {
-    if (!business) return false;
-    const savedBusinesses = savedData?.businesses ?? [];
-    return savedBusinesses.some((item: { id: string; slug?: string }) => item.id === business.id || item.slug === business.slug);
-  }, [business, savedData?.businesses]);
 
   const images = useMemo(() => (business ? normalizeBusinessImages(business) : []), [business]);
   const ratingMeta = useMemo(() => (business ? normalizeBusinessRating(business) : { rating: 0, reviewCount: 0 }), [business]);
@@ -78,35 +112,24 @@ export default function BusinessScreen({ initialTab }: Props) {
     router.replace(routes.home() as never);
   };
 
-  const handleShare = async () => {
-    if (!business) return;
-    const urlId = business.slug || business.id;
-    const url = `${ENV.apiBaseUrl}/business/${urlId}`;
-    try {
-      await Share.share({
-        title: business.name,
-        message: `${business.name}\n${url}`,
-      });
-    } catch {
-      // Ignore share dismiss errors.
-    }
+  const handleOpenNotifications = () => {
+    router.push(routes.notifications() as never);
   };
 
-  const handleToggleSave = () => {
-    if (!business) return;
-
-    if (!user) {
-      router.push(routes.login() as never);
-      return;
-    }
-
-    if (isSaved) {
-      unsaveMutation.mutate(business.id);
-      return;
-    }
-
-    saveMutation.mutate(business.id);
+  const handleOpenMessages = () => {
+    router.push(routes.dmInbox() as never);
   };
+
+  const headerMenuItems = useMemo<BusinessHeaderMenuItem[]>(
+    () => [
+      { key: 'home', label: 'Home', onPress: () => router.push(routes.home() as never) },
+      { key: 'trending', label: 'Trending', onPress: () => router.push(routes.trending() as never) },
+      { key: 'events', label: 'Events & Specials', onPress: () => router.push(routes.eventsSpecials() as never) },
+      { key: 'saved', label: 'Saved', onPress: () => router.push(routes.saved() as never) },
+      { key: 'profile', label: 'Profile', onPress: () => router.push(routes.profile() as never) },
+    ],
+    [router]
+  );
 
   const handleLeaveReview = () => {
     if (!business) return;
@@ -120,13 +143,92 @@ export default function BusinessScreen({ initialTab }: Props) {
 
   const isBusinessOwner = Boolean(user && business?.owner_id && user.id === business.owner_id);
 
+  // Trigger contact modal after business loads and animations settle
+  useEffect(() => {
+    if (business && !contactModalTriggered.current && !isLoading && !isBusinessOwner) {
+      contactModalTriggered.current = true;
+      const timer = setTimeout(() => {
+        setShowContactModal(true);
+      }, 2500); // Show after reveal animations are mostly complete
+
+      return () => clearTimeout(timer);
+    }
+  }, [business, isLoading, isBusinessOwner]);
+
+  const handleCloseContactModal = () => {
+    setShowContactModal(false);
+  };
+
+  const headerProgress = useRef(new Animated.Value(0)).current;
+  const headerCollapsedRef = useRef(false);
+  const scrollRef = useRef<ScrollView | null>(null);
+  const scrollTopVisibleRef = useRef(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  const [showScrollTopButton, setShowScrollTopButton] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
+  const contactModalTriggered = useRef(false);
+
+  const setScrollTopVisible = useCallback((visible: boolean) => {
+    if (scrollTopVisibleRef.current === visible) return;
+    scrollTopVisibleRef.current = visible;
+    setShowScrollTopButton(visible);
+  }, []);
+
+  const handleScrollToTop = useCallback(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, []);
+
+  useGlobalScrollToTop({
+    visible: showScrollTopButton,
+    enabled: true,
+    onScrollToTop: handleScrollToTop,
+  });
+
+  const setHeaderState = useCallback(
+    (collapsed: boolean) => {
+      if (headerCollapsedRef.current === collapsed) return;
+      headerCollapsedRef.current = collapsed;
+      setHeaderCollapsed(collapsed);
+      Animated.spring(headerProgress, {
+        toValue: collapsed ? 1 : 0,
+        damping: 28,
+        mass: 0.8,
+        stiffness: 300,
+        overshootClamping: true,
+        useNativeDriver: false,
+      }).start();
+    },
+    [headerProgress]
+  );
+
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const y = event.nativeEvent.contentOffset.y;
+      setScrollTopVisible(y > 300);
+      if (y > 52) setHeaderState(true);
+      else if (y < 18) setHeaderState(false);
+    },
+    [setHeaderState, setScrollTopVisible]
+  );
+
+  const headerBg = headerProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['transparent', businessDetailColors.coral],
+  });
+  const headerElevation = headerProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 8],
+  });
+  const headerShadowOpacity = headerProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 0.12],
+  });
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <Stack.Screen options={{ headerShown: false }} />
-        <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color={businessDetailColors.charcoal} />
-        </View>
+        <BusinessScreenSkeleton />
       </SafeAreaView>
     );
   }
@@ -136,7 +238,7 @@ export default function BusinessScreen({ initialTab }: Props) {
       <SafeAreaView style={styles.container}>
         <Stack.Screen options={{ headerShown: false }} />
         <EmptyState
-          icon="alert-circle-outline"
+          icon="alert-circle"
           title="Business not found"
           message="This business may no longer be available."
           actionLabel="Go home"
@@ -150,94 +252,148 @@ export default function BusinessScreen({ initialTab }: Props) {
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
 
+      <Animated.View style={[styles.stickyHeader, { backgroundColor: headerBg, elevation: headerElevation, shadowOpacity: headerShadowOpacity }]}>
+        <BusinessPageHeader
+          onPressBack={handleBack}
+          onPressNotifications={handleOpenNotifications}
+          onPressMessages={handleOpenMessages}
+          menuItems={headerMenuItems}
+          collapsed={headerCollapsed}
+        />
+      </Animated.View>
+
       <ScrollView
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
         <View style={styles.mainColumn}>
-          <BusinessPageHeader
-            businessName={business.name}
-            onPressBack={handleBack}
-            onPressSave={handleToggleSave}
-            onPressShare={handleShare}
-            isSaved={isSaved}
-          />
+          <RevealBlock delay={0}>
+            <BusinessHeroCarousel
+              businessName={business.name}
+              images={images}
+              rating={ratingMeta.rating}
+              verified={business.verified}
+              subcategorySlug={business.primary_subcategory_slug ?? business.sub_interest_id ?? business.subInterestId}
+              interestId={business.primary_category_slug ?? business.interest_id ?? business.interestId}
+            />
+          </RevealBlock>
 
-          <BusinessHeroCarousel
-            businessName={business.name}
-            images={images}
-            rating={ratingMeta.rating}
-            verified={business.verified}
-          />
+          <RevealBlock delay={60}>
+            <BusinessInfoBlock
+              name={business.name}
+              rating={ratingMeta.rating}
+              category={categoryText}
+              location={locationText}
+            />
+          </RevealBlock>
 
-          <BusinessInfoBlock
-            name={business.name}
-            rating={ratingMeta.rating}
-            category={categoryText}
-            location={locationText}
-          />
+          <RevealBlock delay={120}>
+            <BusinessDescriptionCard description={descriptionText} />
+          </RevealBlock>
 
-          <BusinessDescriptionCard description={descriptionText} />
+          <RevealBlock delay={180}>
+            <BusinessDetailsCard
+              priceRange={business.price_range ?? business.priceRange}
+              verified={business.verified}
+              hours={business.hours}
+              openingHours={business.openingHours}
+              opening_hours={business.opening_hours}
+            />
+          </RevealBlock>
 
-          <BusinessDetailsCard
-            priceRange={business.price_range ?? business.priceRange}
-            verified={business.verified}
-            hours={business.hours}
-            openingHours={business.openingHours}
-            opening_hours={business.opening_hours}
-          />
+          <RevealBlock delay={240}>
+            <BusinessPhotoGrid businessName={business.name} photos={images} />
+          </RevealBlock>
 
-          <BusinessPhotoGrid businessName={business.name} photos={images} />
+          <RevealBlock delay={300}>
+            <BusinessLocationCard
+              name={business.name}
+              address={business.address}
+              location={business.location}
+              latitude={business.lat}
+              longitude={business.lng}
+            />
+          </RevealBlock>
 
-          <BusinessLocationCard
-            name={business.name}
-            address={business.address}
-            location={business.location}
-            latitude={business.lat}
-            longitude={business.lng}
-          />
+          <RevealBlock delay={360}>
+            <BusinessContactInfoCard
+              phone={business.phone}
+              email={business.email}
+              website={business.website}
+              address={business.address}
+              location={business.location}
+            />
+          </RevealBlock>
 
-          <BusinessActionCard
-            onPressLeaveReview={handleLeaveReview}
-            onPressEditBusiness={() => router.push('/role-unsupported' as never)}
-            isBusinessOwner={isBusinessOwner}
-          />
+          <RevealBlock delay={420}>
+            <BusinessActionCard
+              onPressLeaveReview={handleLeaveReview}
+              onPressEditBusiness={() => router.push('/role-unsupported' as never)}
+              isBusinessOwner={isBusinessOwner}
+            />
+          </RevealBlock>
 
-          <PersonalizationInsightsCard
-            business={business}
-            onPressLogin={() => router.push(routes.login() as never)}
-          />
+          <RevealBlock delay={480}>
+            <PersonalizationInsightsCard
+              business={business}
+              onPressLogin={() => router.push(routes.login() as never)}
+            />
+          </RevealBlock>
 
-          <BusinessContactInfoCard
-            phone={business.phone}
-            email={business.email}
-            website={business.website}
-            address={business.address}
-            location={business.location}
-          />
+          <RevealBlock delay={540}>
+            <BusinessPerformanceInsightsCard
+              punctuality={business.stats?.percentiles?.punctuality}
+              costEffectiveness={business.stats?.percentiles?.['cost-effectiveness']}
+              friendliness={business.stats?.percentiles?.friendliness}
+              trustworthiness={business.stats?.percentiles?.trustworthiness}
+            />
+          </RevealBlock>
 
-          <BusinessContactCard
-            businessId={business.id}
-            businessName={business.name}
-            phone={business.phone}
-          />
+          <RevealBlock delay={600}>
+            <BusinessContactCard
+              businessId={business.id}
+              businessName={business.name}
+              phone={business.phone}
+            />
+          </RevealBlock>
         </View>
 
-        <BusinessOwnedEventsSection businessId={business.id} businessName={business.name} />
+        <RevealBlock delay={660}>
+          <BusinessOwnedEventsSection businessId={business.id} businessName={business.name} />
+        </RevealBlock>
 
-        <BusinessReviewsSection businessId={business.id} onPressWriteReview={handleLeaveReview} />
+        <RevealBlock delay={720}>
+          <BusinessReviewsSection businessId={business.id} onPressWriteReview={handleLeaveReview} />
+        </RevealBlock>
 
-        <SimilarBusinessesSection businessId={business.id} />
+        <RevealBlock delay={780}>
+          <SimilarBusinessesSection businessId={business.id} />
+        </RevealBlock>
 
         {initialTab === 'reviews' ? (
-          <View style={styles.deeplinkHint}>
-            <Text style={styles.deeplinkHintText}>
-              This route now opens the write-review flow to match web behavior.
-            </Text>
-          </View>
+          <RevealBlock delay={840}>
+            <View style={styles.deeplinkHint}>
+              <Text style={styles.deeplinkHintText}>
+                This route now opens the write-review flow to match web behavior.
+              </Text>
+            </View>
+          </RevealBlock>
         ) : null}
       </ScrollView>
+
+      <ContactBusinessModal
+        visible={showContactModal}
+        businessName={business.name}
+        businessPhone={business.phone}
+        businessEmail={business.email}
+        businessWebsite={business.website}
+        onClose={handleCloseContactModal}
+        onPressReview={handleLeaveReview}
+      />
     </SafeAreaView>
   );
 }
@@ -247,10 +403,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: businessDetailColors.page,
   },
-  loadingWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+  stickyHeader: {
+    paddingHorizontal: businessDetailSpacing.pageGutter,
+    paddingTop: 10,
+    paddingBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 8,
   },
   scroll: {
     flex: 1,

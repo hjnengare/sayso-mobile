@@ -1,10 +1,46 @@
-import { StyleSheet, View, ScrollView } from 'react-native';
+import { memo, useEffect, useRef } from 'react';
+import { Animated, Easing, StyleSheet, View, ScrollView } from 'react-native';
 import type { EventSpecialListItemDto } from '@sayso/contracts';
 import { EventCard } from '../../../components/EventCard';
 import { EventCardSkeleton } from '../../../components/EventCardSkeleton';
 import { Text } from '../../../components/Typography';
 import { homeTokens } from './HomeTokens';
 import { CARD_RADIUS } from '../../../styles/radii';
+
+type AnimatedEventCardProps = {
+  index: number;
+  item: EventSpecialListItemDto;
+};
+
+const AnimatedEventCard = memo(function AnimatedEventCard({ index, item }: AnimatedEventCardProps) {
+  const anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const delay = Math.min(index, 4) * 60;
+    const t = setTimeout(() => {
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 440,
+        easing: Easing.out(Easing.back(1.08)),
+        useNativeDriver: true,
+      }).start();
+    }, delay);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <Animated.View
+      style={{
+        opacity: anim,
+        transform: [
+          { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) },
+        ],
+      }}
+    >
+      <EventCard item={item} style={styles.cardWrap} />
+    </Animated.View>
+  );
+});
 
 type Props = {
   items: EventSpecialListItemDto[];
@@ -48,8 +84,8 @@ export function HomeEventsSpecialsRow({ items, loading, error }: Props) {
       style={styles.row}
       contentContainerStyle={styles.content}
     >
-      {items.map((item) => (
-        <EventCard key={`${item.type}-${item.id}`} item={item} style={styles.cardWrap} />
+      {items.map((item, index) => (
+        <AnimatedEventCard key={`${item.type}-${item.id}`} index={index} item={item} />
       ))}
     </ScrollView>
   );

@@ -1,87 +1,241 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { Dimensions, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../Typography';
 import { businessDetailColors } from './styles';
 
-type Props = {
-  businessName: string;
-  onPressBack: () => void;
-  onPressSave: () => void;
-  onPressShare: () => void;
-  isSaved: boolean;
+export type BusinessHeaderMenuItem = {
+  key: string;
+  label: string;
+  onPress: () => void;
 };
 
-export function BusinessPageHeader({ businessName, onPressBack, onPressSave, onPressShare, isSaved }: Props) {
+type Props = {
+  onPressBack: () => void;
+  onPressNotifications: () => void;
+  onPressMessages: () => void;
+  menuItems: BusinessHeaderMenuItem[];
+  collapsed?: boolean;
+};
+
+type MenuAnchor = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+const MENU_WIDTH = 222;
+const MENU_EDGE_PADDING = 12;
+
+export function BusinessPageHeader({
+  onPressBack,
+  onPressNotifications,
+  onPressMessages,
+  menuItems,
+  collapsed = false,
+}: Props) {
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState<MenuAnchor | null>(null);
+  const logoTriggerRef = useRef<View | null>(null);
+  const foregroundColor = collapsed ? businessDetailColors.white : 'rgba(45,45,45,0.88)';
+  const backButtonBg = collapsed ? 'rgba(255,255,255,0.14)' : 'rgba(229,224,229,0.9)';
+  const backButtonBorder = collapsed ? 'rgba(255,255,255,0.24)' : 'rgba(45,55,72,0.18)';
+
+  const handleSelectMenuItem = (item: BusinessHeaderMenuItem) => {
+    setMenuVisible(false);
+    item.onPress();
+  };
+
+  const toggleMenu = useCallback(() => {
+    if (menuVisible) {
+      setMenuVisible(false);
+      return;
+    }
+
+    const node = logoTriggerRef.current;
+    if (!node || typeof node.measureInWindow !== 'function') {
+      setMenuVisible(true);
+      return;
+    }
+
+    node.measureInWindow((x, y, width, height) => {
+      setMenuAnchor({ x, y, width, height });
+      setMenuVisible(true);
+    });
+  }, [menuVisible]);
+
+  const menuPositionStyle = useMemo(() => {
+    if (!menuAnchor) {
+      return styles.menuCardFallback;
+    }
+
+    const windowWidth = Dimensions.get('window').width;
+    const centeredLeft = menuAnchor.x + menuAnchor.width / 2 - MENU_WIDTH / 2;
+    const left = Math.min(
+      Math.max(MENU_EDGE_PADDING, centeredLeft),
+      windowWidth - MENU_WIDTH - MENU_EDGE_PADDING
+    );
+
+    return {
+      left,
+      top: menuAnchor.y + menuAnchor.height + 6,
+    };
+  }, [menuAnchor]);
+
   return (
     <View style={styles.wrap}>
       <View style={styles.topRow}>
-        <Pressable style={styles.iconButton} onPress={onPressBack} accessibilityLabel="Go back">
-          <Ionicons name="chevron-back" size={19} color={businessDetailColors.charcoal} />
-        </Pressable>
-
-        <View style={styles.actions}>
-          <Pressable style={styles.iconButton} onPress={onPressShare} accessibilityLabel="Share business">
-            <Ionicons name="share-social-outline" size={16} color={businessDetailColors.charcoal} />
+        <View style={styles.leftSlot}>
+          <Pressable
+            style={[styles.backButton, { backgroundColor: backButtonBg, borderColor: backButtonBorder }]}
+            onPress={onPressBack}
+            accessibilityLabel="Go back"
+          >
+            <Ionicons name="chevron-back" size={20} color={foregroundColor} />
           </Pressable>
-          <Pressable style={styles.iconButton} onPress={onPressSave} accessibilityLabel="Save business">
+        </View>
+
+        <View style={styles.centerSlot}>
+          <Pressable
+            ref={logoTriggerRef}
+            style={styles.logoTrigger}
+            onPress={toggleMenu}
+            accessibilityLabel="Open business navigation menu"
+          >
+            <Text style={[styles.logoText, { color: foregroundColor }]}>Sayso</Text>
             <Ionicons
-              name={isSaved ? 'bookmark' : 'bookmark-outline'}
-              size={16}
-              color={isSaved ? businessDetailColors.coral : businessDetailColors.charcoal}
+              name={menuVisible ? 'chevron-up' : 'chevron-down'}
+              size={14}
+              color={foregroundColor}
             />
+          </Pressable>
+        </View>
+
+        <View style={styles.rightSlot}>
+          <Pressable
+            style={styles.iconButton}
+            onPress={onPressNotifications}
+            accessibilityLabel="Notifications"
+          >
+            <Ionicons name="notifications-outline" size={18} color={foregroundColor} />
+          </Pressable>
+          <Pressable
+            style={styles.iconButton}
+            onPress={onPressMessages}
+            accessibilityLabel="Messages"
+          >
+            <Ionicons name="chatbubble-outline" size={18} color={foregroundColor} />
           </Pressable>
         </View>
       </View>
 
-      <View style={styles.breadcrumbRow}>
-        <Text style={styles.breadcrumb}>Home</Text>
-        <Ionicons name="chevron-forward" size={12} color={businessDetailColors.textSubtle} />
-        <Text style={styles.breadcrumbCurrent} numberOfLines={1}>
-          {businessName}
-        </Text>
-      </View>
+      <Modal
+        transparent
+        animationType="fade"
+        visible={menuVisible}
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <View style={styles.menuBackdrop}>
+          <Pressable style={StyleSheet.absoluteFillObject} onPress={() => setMenuVisible(false)} />
+          <View style={[styles.menuCard, menuPositionStyle]}>
+            {menuItems.map((item, index) => (
+              <Pressable
+                key={item.key}
+                style={[styles.menuItem, index !== menuItems.length - 1 ? styles.menuItemBorder : null]}
+                onPress={() => handleSelectMenuItem(item)}
+              >
+                <Text style={styles.menuItemText}>{item.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    gap: 10,
-  },
+  wrap: {},
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
   },
-  actions: {
+  leftSlot: {
+    width: 84,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'flex-start',
   },
-  iconButton: {
-    width: 34,
-    height: 34,
+  centerSlot: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rightSlot: {
+    width: 84,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  logoTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  logoText: {
+    fontSize: 28,
+    lineHeight: 28,
+    fontFamily: 'MonarchParadox',
+    letterSpacing: 0.2,
+    textTransform: 'none',
+  },
+  backButton: {
+    width: 30,
+    height: 30,
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(229,224,229,0.8)',
+    backgroundColor: 'rgba(229,224,229,0.9)',
+    borderWidth: 1,
+    borderColor: 'rgba(45,55,72,0.18)',
+  },
+  iconButton: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(17,24,39,0.22)',
+  },
+  menuCard: {
+    position: 'absolute',
+    width: 222,
+    borderRadius: 14,
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.36)',
+    backgroundColor: 'rgba(229,224,229,0.98)',
   },
-  breadcrumbRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
+  menuCardFallback: {
+    top: 92,
+    left: '50%',
+    marginLeft: -(MENU_WIDTH / 2),
   },
-  breadcrumb: {
-    color: businessDetailColors.textMuted,
-    fontSize: 12,
-    fontWeight: '600',
+  menuItem: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-  breadcrumbCurrent: {
-    flex: 1,
+  menuItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(45,55,72,0.1)',
+  },
+  menuItemText: {
     color: businessDetailColors.charcoal,
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
   },
 });

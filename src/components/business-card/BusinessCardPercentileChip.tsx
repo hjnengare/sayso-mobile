@@ -13,15 +13,15 @@ type IconName = ComponentProps<typeof Ionicons>['name'];
 function getIconName(label: Props['label']): IconName {
   switch (label) {
     case 'punctuality':
-      return 'time-outline';
+      return 'time';
     case 'cost-effectiveness':
-      return 'cash-outline';
+      return 'cash';
     case 'friendliness':
-      return 'happy-outline';
+      return 'happy';
     case 'trustworthiness':
-      return 'shield-checkmark-outline';
+      return 'shield-checkmark';
     default:
-      return 'checkmark-circle-outline';
+      return 'checkmark-circle';
   }
 }
 

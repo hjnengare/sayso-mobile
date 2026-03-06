@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { CardSurface } from '../CardSurface';
 import { StarRating } from '../StarRating';
 import { Text } from '../Typography';
@@ -38,8 +39,11 @@ export function BusinessReviewsSection({ businessId, onPressWriteReview }: Props
           <Text style={styles.loadingText}>Loading reviews...</Text>
         ) : reviews.length === 0 ? (
           <View style={styles.emptyWrap}>
+            <View style={styles.emptyIconCircle}>
+              <Ionicons name="chatbubble" size={30} color={businessDetailColors.charcoal} />
+            </View>
             <Text style={styles.emptyTitle}>No reviews yet</Text>
-            <Text style={styles.emptyBody}>Be the first to review this business.</Text>
+            <Text style={styles.emptyBody}>No reviews yet. Be the first to review this business!</Text>
             <Pressable style={styles.emptyAction} onPress={onPressWriteReview}>
               <Text style={styles.emptyActionText}>Write First Review</Text>
             </Pressable>
@@ -122,9 +126,17 @@ const styles = StyleSheet.create({
   },
   emptyWrap: {
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 18,
-    paddingHorizontal: 10,
+    gap: 10,
+    paddingVertical: 28,
+    paddingHorizontal: 14,
+  },
+  emptyIconCircle: {
+    width: 78,
+    height: 78,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(229,224,229,0.72)',
   },
   emptyTitle: {
     color: businessDetailColors.charcoal,
@@ -133,19 +145,20 @@ const styles = StyleSheet.create({
   },
   emptyBody: {
     color: businessDetailColors.textMuted,
-    fontSize: 13,
+    fontSize: 14,
     textAlign: 'center',
+    lineHeight: 22,
   },
   emptyAction: {
     marginTop: 8,
     borderRadius: 999,
     backgroundColor: businessDetailColors.coral,
-    paddingHorizontal: 18,
-    paddingVertical: 11,
+    paddingHorizontal: 28,
+    paddingVertical: 12,
   },
   emptyActionText: {
     color: businessDetailColors.white,
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
   },
   reviewsStack: {

@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   RefreshControl,
   SafeAreaView,
   ScrollView,
@@ -15,10 +16,49 @@ import { useRouter } from 'expo-router';
 import { useAuthSession } from '../../hooks/useSession';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useProfile, useUpdateProfile } from '../../hooks/useProfile';
+import { useGlobalScrollToTop } from '../../hooks/useGlobalScrollToTop';
 import { routes } from '../../navigation/routes';
 import { AppHeader } from '../../components/AppHeader';
 import { LinkRow } from '../../components/LinkRow';
+import { SkeletonBlock } from '../../components/SkeletonBlock';
 import { Text, TextInput } from '../../components/Typography';
+
+function ProfileSkeleton() {
+  return (
+    <>
+      <View style={styles.avatarSection}>
+        <SkeletonBlock style={styles.skeletonAvatar} />
+        <SkeletonBlock style={styles.skeletonName} />
+        <SkeletonBlock style={styles.skeletonUsername} />
+        <SkeletonBlock style={styles.skeletonEmail} />
+      </View>
+
+      <View style={styles.statsRow}>
+        <View style={styles.stat}>
+          <SkeletonBlock style={styles.skeletonStatNum} />
+          <SkeletonBlock style={styles.skeletonStatLabel} />
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.stat}>
+          <SkeletonBlock style={styles.skeletonStatNum} />
+          <SkeletonBlock style={styles.skeletonStatLabel} />
+        </View>
+      </View>
+
+      <View style={styles.links}>
+        {Array.from({ length: 7 }, (_, index) => (
+          <View key={`profile-link-skeleton-${index}`} style={styles.linkSkeletonRow}>
+            <View style={styles.linkSkeletonCopy}>
+              <SkeletonBlock style={styles.linkSkeletonTitle} />
+              <SkeletonBlock style={styles.linkSkeletonSubtitle} />
+            </View>
+            <SkeletonBlock style={styles.linkSkeletonChevron} />
+          </View>
+        ))}
+      </View>
+    </>
+  );
+}
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuthSession();
@@ -29,8 +69,40 @@ export default function ProfileScreen() {
 
   const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState('');
+  const scrollRef = useRef<ScrollView | null>(null);
+  const scrollTopVisibleRef = useRef(false);
+  const [showScrollTopButton, setShowScrollTopButton] = useState(false);
 
   const profile = data?.data;
+
+  const setScrollTopVisible = useCallback((visible: boolean) => {
+    if (scrollTopVisibleRef.current === visible) return;
+    scrollTopVisibleRef.current = visible;
+    setShowScrollTopButton(visible);
+  }, []);
+
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      setScrollTopVisible(event.nativeEvent.contentOffset.y > 220);
+    },
+    [setScrollTopVisible]
+  );
+
+  const handleScrollToTop = useCallback(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, []);
+
+  useGlobalScrollToTop({
+    visible: showScrollTopButton,
+    enabled: Boolean(user),
+    onScrollToTop: handleScrollToTop,
+  });
+
+  useEffect(() => {
+    if (!user) {
+      setScrollTopVisible(false);
+    }
+  }, [setScrollTopVisible, user]);
 
   if (!user) {
     return (
@@ -73,15 +145,16 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
+        ref={scrollRef}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
         <AppHeader title="Profile" subtitle="Account, achievements, and settings" showBell />
 
         {isLoading ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color="#111827" />
-          </View>
+          <ProfileSkeleton />
         ) : (
           <>
             <View style={styles.avatarSection}>
@@ -272,4 +345,69 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF9F9',
   },
   signOutTxt: { color: '#EF4444', fontWeight: '600', fontSize: 15 },
+  skeletonAvatar: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+  },
+  skeletonName: {
+    width: 186,
+    height: 22,
+    borderRadius: 10,
+    marginTop: 14,
+  },
+  skeletonUsername: {
+    width: 108,
+    height: 12,
+    borderRadius: 6,
+    marginTop: 8,
+  },
+  skeletonEmail: {
+    width: 156,
+    height: 12,
+    borderRadius: 6,
+    marginTop: 6,
+  },
+  skeletonStatNum: {
+    width: 42,
+    height: 22,
+    borderRadius: 10,
+  },
+  skeletonStatLabel: {
+    width: 52,
+    height: 11,
+    borderRadius: 6,
+    marginTop: 6,
+  },
+  linkSkeletonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  linkSkeletonCopy: {
+    flex: 1,
+    gap: 6,
+    paddingRight: 12,
+  },
+  linkSkeletonTitle: {
+    width: '46%',
+    height: 14,
+    borderRadius: 7,
+  },
+  linkSkeletonSubtitle: {
+    width: '72%',
+    height: 11,
+    borderRadius: 6,
+  },
+  linkSkeletonChevron: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+  },
 });

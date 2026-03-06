@@ -10,7 +10,7 @@ type Props = {
   onAction?: () => void;
 };
 
-export function EmptyState({ icon = 'search-outline', title, message, actionLabel, onAction }: Props) {
+export function EmptyState({ icon = 'search', title, message, actionLabel, onAction }: Props) {
   return (
     <View style={styles.container}>
       <Ionicons name={icon} size={52} color="#D1D5DB" />

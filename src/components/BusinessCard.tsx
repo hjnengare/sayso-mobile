@@ -2,7 +2,6 @@ import { memo } from 'react';
 import { Platform, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { BusinessListItemDto } from '@sayso/contracts';
-import { useAuthSession } from '../hooks/useSession';
 import { routes } from '../navigation/routes';
 import { getOverlayShadowStyle } from '../styles/overlayShadow';
 import { CARD_CTA_RADIUS, CARD_RADIUS } from '../styles/radii';
@@ -30,22 +29,12 @@ const ctaShadowStyle = getOverlayShadowStyle(CARD_CTA_RADIUS);
 
 function BusinessCardComponent({ business, style }: Props) {
   const router = useRouter();
-  const { user } = useAuthSession();
   const businessIdentifier = getBusinessIdentifier(business);
   const displayCategoryLabel = getDisplayCategoryLabel(business);
   const categorySlug = normalizeCategorySlug(business);
   const { hasRating, displayRating, totalReviews } = normalizeRating(business);
   const { image, isPlaceholder, placeholderImage } = resolveDisplayImage(business);
   const isFeaturedCard = String(business.badge ?? '').toLowerCase() === 'featured';
-
-  const handleReviewPress = () => {
-    if (!user) {
-      router.push(routes.login() as never);
-      return;
-    }
-
-    router.push(routes.writeReview('business', business.id) as never);
-  };
 
   return (
     <CardSurface
@@ -87,12 +76,10 @@ function BusinessCardComponent({ business, style }: Props) {
           style={({ pressed }) => [styles.reviewButton, ctaShadowStyle, pressed ? styles.reviewButtonPressed : null]}
           onPress={(event) => {
             event.stopPropagation();
-            handleReviewPress();
+            router.push(routes.businessDetail(businessIdentifier) as never);
           }}
         >
-          <Text style={styles.reviewButtonText}>
-            {hasRating ? 'Write a Review' : 'Be the First to Review'}
-          </Text>
+          <Text style={styles.reviewButtonText}>{isFeaturedCard ? 'Review' : 'View Details'}</Text>
         </Pressable>
       </View>
     </CardSurface>
@@ -126,11 +113,12 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(255,255,255,0.34)',
   },
   name: {
-    fontSize: 17,
+    fontSize: 22,
     fontWeight: '700',
     color: '#111827',
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 28,
+    letterSpacing: -0.2,
     width: '100%',
   },
   reviewCount: {

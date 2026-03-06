@@ -26,7 +26,7 @@ export function BusinessInfoBlock({ name, rating, category, location }: Props) {
         </View>
 
         <View style={styles.locationPill}>
-          <Ionicons name="location-outline" size={13} color={businessDetailColors.charcoal} />
+          <Ionicons name="location" size={13} color={businessDetailColors.charcoal} />
           <Text style={styles.locationText} numberOfLines={1}>
             {location}
           </Text>

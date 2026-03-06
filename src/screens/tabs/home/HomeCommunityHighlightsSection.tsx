@@ -163,6 +163,41 @@ export function HomeCommunityHighlightsSection({
 }: Props) {
   const contributorsHeading = reviewersMode === 'normal' ? 'Top Contributors' : 'Early Voices';
   const showContributorsAction = reviewers.length > 0 && !reviewersLoading;
+  
+  const badgesAnimValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animateBadgesEntrance = () => {
+      Animated.sequence([
+        Animated.delay(800), // Wait a bit before starting
+        Animated.parallel([
+          Animated.timing(badgesAnimValue, {
+            toValue: 1,
+            duration: 600,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start();
+    };
+
+    // Only animate if we're showing the empty state (no reviewers)
+    if (reviewers.length === 0 && !reviewersLoading && !reviewersError) {
+      animateBadgesEntrance();
+    }
+  }, [reviewers.length, reviewersLoading, reviewersError, badgesAnimValue]);
+
+  const badgesAnimatedStyle = {
+    opacity: badgesAnimValue,
+    transform: [
+      {
+        translateY: badgesAnimValue.interpolate({
+          inputRange: [0, 1],
+          outputRange: [10, 0],
+        }),
+      },
+    ],
+  };
 
   return (
     <View style={styles.section}>
@@ -205,6 +240,12 @@ export function HomeCommunityHighlightsSection({
           </View>
         ) : reviewers.length === 0 ? (
           <View style={styles.emptyContributorsCard}>
+            <View style={styles.logoContainer}>
+              <Text style={styles.logoWordmark}>Sayso</Text>
+              <Animated.Text style={[styles.badgesScript, badgesAnimatedStyle]}>
+                badges
+              </Animated.Text>
+            </View>
             <Text style={styles.emptyContributorsTitle}>Be among the first voices shaping Sayso.</Text>
             <Text style={styles.emptyContributorsBody}>
               Write your first review and help set the standard for what is worth discovering.
@@ -370,7 +411,7 @@ const styles = StyleSheet.create({
   emptyContributorsCard: {
     marginHorizontal: homeTokens.pageGutter,
     paddingHorizontal: 20,
-    paddingTop: 56,
+    paddingTop: 24,
     paddingBottom: 22,
     borderRadius: CARD_RADIUS,
     borderWidth: 1,
@@ -392,6 +433,28 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.84)',
     textAlign: 'center',
     maxWidth: 320,
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    gap: 2,
+    marginBottom: 16,
+  },
+  logoWordmark: {
+    fontSize: 26,
+    lineHeight: 26,
+    fontFamily: 'MonarchParadox',
+    letterSpacing: 0.2,
+    textTransform: 'none',
+    color: homeTokens.white,
+  },
+  badgesScript: {
+    fontSize: 16,
+    lineHeight: 16,
+    fontStyle: 'italic',
+    fontWeight: '400',
+    color: homeTokens.white,
   },
   exploreBadgesButton: {
     marginTop: 12,

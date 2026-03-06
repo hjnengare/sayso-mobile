@@ -1,5 +1,7 @@
+import type { Ref } from 'react';
 import {
   Animated,
+  FlatList,
   NativeScrollEvent,
   NativeSyntheticEvent,
   RefreshControl,
@@ -27,6 +29,7 @@ type Props = {
   onRefresh: () => void;
   refreshing: boolean;
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  listRef?: Ref<FlatList<BusinessListItemDto>>;
 };
 
 const ratingOptions = [4, 4.5];
@@ -46,9 +49,11 @@ export function HomeSearchResults({
   onRefresh,
   refreshing,
   onScroll,
+  listRef,
 }: Props) {
   return (
     <Animated.FlatList
+      ref={listRef}
       data={isLoading ? [] : results}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => <BusinessCard business={item} />}

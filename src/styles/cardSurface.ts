@@ -24,7 +24,7 @@ export function getCardContentStyle(radius: number, material: 'solid' | 'frosted
     borderRadius: radius,
     overflow: 'hidden',
     backgroundColor: isFrosted ? FROSTED_CARD_BACKGROUND_COLOR : CARD_BACKGROUND_COLOR,
-    borderWidth: 1,
+    borderWidth: isFrosted ? 0 : 1,
     borderColor: isFrosted ? FROSTED_CARD_BORDER_COLOR : CARD_BORDER_COLOR,
   } as ViewStyle;
 }

@@ -1,10 +1,46 @@
-import { StyleSheet, View, ScrollView } from 'react-native';
+import { memo, useEffect, useRef } from 'react';
+import { Animated, Easing, StyleSheet, View, ScrollView } from 'react-native';
 import type { BusinessListItemDto, FeaturedBusinessDto } from '@sayso/contracts';
 import { BusinessCard } from '../../../components/BusinessCard';
 import { Text } from '../../../components/Typography';
 import { SkeletonCard } from '../../../components/SkeletonCard';
 import { homeTokens } from './HomeTokens';
 import { CARD_RADIUS } from '../../../styles/radii';
+
+type AnimatedCardProps = {
+  index: number;
+  business: BusinessListItemDto | FeaturedBusinessDto;
+};
+
+const AnimatedBusinessCard = memo(function AnimatedBusinessCard({ index, business }: AnimatedCardProps) {
+  const anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const delay = Math.min(index, 4) * 60;
+    const t = setTimeout(() => {
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 440,
+        easing: Easing.out(Easing.back(1.08)),
+        useNativeDriver: true,
+      }).start();
+    }, delay);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <Animated.View
+      style={{
+        opacity: anim,
+        transform: [
+          { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) },
+        ],
+      }}
+    >
+      <BusinessCard business={business} style={styles.cardWrap} />
+    </Animated.View>
+  );
+});
 
 type Props<T extends BusinessListItemDto | FeaturedBusinessDto> = {
   items: T[];
@@ -67,8 +103,8 @@ export function HomeBusinessRow<T extends BusinessListItemDto | FeaturedBusiness
       style={styles.row}
       contentContainerStyle={[styles.content, { paddingBottom: resolvedContentPaddingBottom }]}
     >
-      {items.map((item) => (
-        <BusinessCard key={item.id} business={item} style={styles.cardWrap} />
+      {items.map((item, index) => (
+        <AnimatedBusinessCard key={item.id} index={index} business={item} />
       ))}
     </ScrollView>
   );

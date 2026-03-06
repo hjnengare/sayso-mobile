@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
-import { ActivityIndicator, SafeAreaView, StyleSheet, View } from 'react-native';
+import { SafeAreaView, StyleSheet, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { apiFetch } from '../lib/api';
+import { SkeletonBlock } from '../components/SkeletonBlock';
 import { routes } from '../navigation/routes';
 import { Text } from '../components/Typography';
 
@@ -54,7 +55,10 @@ export default function AuthCallbackScreen() {
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.content}>
-        <ActivityIndicator size="large" color="#111827" />
+        <View style={styles.skeletonWrap}>
+          <SkeletonBlock style={styles.skeletonOrb} />
+          <SkeletonBlock style={styles.skeletonLine} />
+        </View>
         <Text style={styles.label}>Finishing sign in...</Text>
       </View>
     </SafeAreaView>
@@ -71,6 +75,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
+  },
+  skeletonWrap: {
+    alignItems: 'center',
+    gap: 10,
+  },
+  skeletonOrb: {
+    width: 54,
+    height: 54,
+    borderRadius: 999,
+  },
+  skeletonLine: {
+    width: 132,
+    height: 10,
+    borderRadius: 999,
   },
   label: {
     fontSize: 15,

@@ -1,7 +1,9 @@
-import { useMemo, useState } from 'react';
-import { Linking, Modal, Pressable, Share, StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Clipboard, Linking, Modal, Pressable, Share, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
+import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
+import { SkeletonBlock } from '../SkeletonBlock';
 import { Text } from '../Typography';
 import { businessDetailColors, businessDetailSpacing } from './styles';
 import {
@@ -10,6 +12,32 @@ import {
   buildGoogleWalkingUrl,
   buildUberUrl,
 } from './utils';
+
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function estimateTravelTime(distanceKm: number, mode: 'drive' | 'walk'): string {
+  const speed = mode === 'walk' ? 5 : 40;
+  const minutes = Math.round((distanceKm / speed) * 60);
+  if (minutes < 60) return `${minutes} min ${mode}`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}h ${m}m ${mode}` : `${h}h ${mode}`;
+}
+
+function formatDistance(km: number): string {
+  return km < 1 ? `${Math.round(km * 1000)}m` : `${km.toFixed(1)}km`;
+}
 
 type Props = {
   name: string;
@@ -21,8 +49,39 @@ type Props = {
 
 export function BusinessLocationCard({ name, address, location, latitude, longitude }: Props) {
   const [mapModalOpen, setMapModalOpen] = useState(false);
+  const [distance, setDistance] = useState<number | null>(null);
+  const [loadingLocation, setLoadingLocation] = useState(false);
+  const [copied, setCopied] = useState(false);
   const displayLocation = address || location || '';
   const hasCoordinates = typeof latitude === 'number' && typeof longitude === 'number';
+
+  useEffect(() => {
+    if (!hasCoordinates) return;
+    let cancelled = false;
+    setLoadingLocation(true);
+    void (async () => {
+      try {
+        const perm = await Location.requestForegroundPermissionsAsync();
+        if (!perm.granted || cancelled) return;
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        if (cancelled) return;
+        setDistance(haversineKm(pos.coords.latitude, pos.coords.longitude, latitude!, longitude!));
+      } catch {
+        // No-op — distance stays null.
+      } finally {
+        if (!cancelled) setLoadingLocation(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [hasCoordinates, latitude, longitude]);
+
+  const handleCopyAddress = () => {
+    const text = displayLocation;
+    if (!text) return;
+    Clipboard.setString(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
   const mapPreviewUrl = useMemo(
     () =>
       buildBusinessMapPreviewUrl({
@@ -62,42 +121,82 @@ export function BusinessLocationCard({ name, address, location, latitude, longit
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.iconPill}>
-            <Ionicons name="location-outline" size={16} color={businessDetailColors.charcoal} />
+            <Ionicons name="location" size={16} color={businessDetailColors.charcoal} />
           </View>
           <Text style={styles.heading}>Location</Text>
         </View>
-        <Pressable onPress={handleShare} style={styles.headerAction} accessibilityLabel="Share business location">
-          <Ionicons name="share-social-outline" size={15} color={businessDetailColors.charcoal} />
-        </Pressable>
+        <View style={styles.headerActions}>
+          {displayLocation ? (
+            <Pressable
+              onPress={handleCopyAddress}
+              style={styles.headerAction}
+              accessibilityLabel="Copy address"
+            >
+              <Ionicons
+                name={copied ? 'checkmark' : 'copy'}
+                size={15}
+                color={businessDetailColors.charcoal}
+              />
+            </Pressable>
+          ) : null}
+          <Pressable onPress={handleShare} style={styles.headerAction} accessibilityLabel="Share business location">
+            <Ionicons name="share-social" size={15} color={businessDetailColors.charcoal} />
+          </Pressable>
+        </View>
       </View>
 
       {displayLocation ? <Text style={styles.locationLabel}>{displayLocation}</Text> : null}
+
+      {loadingLocation ? (
+        <View style={styles.distanceLoading}>
+          <SkeletonBlock style={styles.distancePillSkeletonShort} />
+          <SkeletonBlock style={styles.distancePillSkeletonMedium} />
+          <SkeletonBlock style={styles.distancePillSkeletonShort} />
+        </View>
+      ) : distance !== null ? (
+        <View style={styles.pillRow}>
+          <View style={styles.pill}>
+            <Ionicons name="navigate" size={12} color={businessDetailColors.sage} />
+            <Text style={styles.pillText}>{formatDistance(distance)} away</Text>
+          </View>
+          <View style={styles.pill}>
+            <Ionicons name="car" size={12} color={businessDetailColors.coral} />
+            <Text style={styles.pillText}>{estimateTravelTime(distance, 'drive')}</Text>
+          </View>
+          {distance < 3 ? (
+            <View style={styles.pill}>
+              <Ionicons name="walk" size={12} color={businessDetailColors.textMuted} />
+              <Text style={styles.pillText}>{estimateTravelTime(distance, 'walk')}</Text>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
 
       {mapPreviewUrl ? (
         <Pressable style={styles.mapPreviewWrap} onPress={() => setMapModalOpen(true)}>
           <Image source={{ uri: mapPreviewUrl }} style={styles.mapPreview} contentFit="cover" />
           <View style={styles.mapOverlay}>
             <View style={styles.mapOverlayPill}>
-              <Ionicons name="expand-outline" size={14} color={businessDetailColors.charcoal} />
+              <Ionicons name="expand" size={14} color={businessDetailColors.charcoal} />
               <Text style={styles.mapOverlayText}>View larger</Text>
             </View>
           </View>
         </Pressable>
       ) : (
         <View style={styles.mapFallback}>
-          <Ionicons name="map-outline" size={28} color={businessDetailColors.textMuted} />
+          <Ionicons name="map" size={28} color={businessDetailColors.textMuted} />
           <Text style={styles.mapFallbackText}>Map coordinates are not available yet.</Text>
         </View>
       )}
 
       <View style={styles.actionRow}>
         <Pressable style={styles.actionPrimary} onPress={() => Linking.openURL(directionsUrl)}>
-          <Ionicons name="navigate-outline" size={15} color={businessDetailColors.white} />
+          <Ionicons name="navigate" size={15} color={businessDetailColors.white} />
           <Text style={styles.actionPrimaryText}>Get directions</Text>
         </Pressable>
 
         <Pressable style={styles.actionCircle} onPress={() => Linking.openURL(walkingUrl)}>
-          <Ionicons name="walk-outline" size={15} color={businessDetailColors.charcoal} />
+          <Ionicons name="walk" size={15} color={businessDetailColors.charcoal} />
         </Pressable>
       </View>
 
@@ -130,23 +229,23 @@ export function BusinessLocationCard({ name, address, location, latitude, longit
               <Image source={{ uri: mapPreviewUrl }} style={styles.modalMap} contentFit="cover" />
             ) : (
               <View style={styles.modalMapFallback}>
-                <Ionicons name="map-outline" size={34} color="rgba(255,255,255,0.72)" />
+                <Ionicons name="map" size={34} color="rgba(255,255,255,0.72)" />
               </View>
             )}
 
             <View style={styles.modalFooter}>
               <Pressable style={styles.modalActionPrimary} onPress={() => Linking.openURL(directionsUrl)}>
-                <Ionicons name="car-outline" size={15} color={businessDetailColors.white} />
+                <Ionicons name="car" size={15} color={businessDetailColors.white} />
                 <Text style={styles.modalActionPrimaryText}>Drive</Text>
               </Pressable>
 
               <Pressable style={styles.modalActionSecondary} onPress={() => Linking.openURL(walkingUrl)}>
-                <Ionicons name="walk-outline" size={15} color={businessDetailColors.white} />
+                <Ionicons name="walk" size={15} color={businessDetailColors.white} />
                 <Text style={styles.modalActionSecondaryText}>Walk</Text>
               </Pressable>
 
               <Pressable style={styles.modalShare} onPress={handleShare}>
-                <Ionicons name="share-social-outline" size={17} color={businessDetailColors.white} />
+                <Ionicons name="share-social" size={17} color={businessDetailColors.white} />
               </Pressable>
             </View>
           </View>
@@ -189,6 +288,10 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: '700',
   },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 6,
+  },
   headerAction: {
     width: 32,
     height: 32,
@@ -196,6 +299,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(229,224,229,0.75)',
+  },
+  distanceLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  distancePillSkeletonShort: {
+    width: 76,
+    height: 26,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.45)',
+  },
+  distancePillSkeletonMedium: {
+    width: 98,
+    height: 26,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.45)',
+  },
+  pillRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(255,255,255,0.55)',
+    borderWidth: 1,
+    borderColor: 'rgba(45,55,72,0.08)',
+  },
+  pillText: {
+    color: businessDetailColors.charcoal,
+    fontSize: 12,
+    fontWeight: '600',
   },
   locationLabel: {
     color: businessDetailColors.textMuted,

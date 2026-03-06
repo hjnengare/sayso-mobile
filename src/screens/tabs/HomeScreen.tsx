@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  FlatList,
   NativeScrollEvent,
   NativeSyntheticEvent,
   RefreshControl,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -12,11 +14,10 @@ import {
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import type { FeaturedBusinessDto, TopReviewerDto } from '@sayso/contracts';
+import type { BusinessListItemDto, TopReviewerDto } from '@sayso/contracts';
 import { CardSurface } from '../../components/CardSurface';
 import { HeaderBellButton } from '../../components/HeaderBellButton';
 import { Text } from '../../components/Typography';
-import { MapPreviewHero } from '../../components/home/MapPreviewHero';
 import { useEventsSpecialsPreview } from '../../hooks/useEventsSpecialsPreview';
 import { useFeaturedBusinesses } from '../../hooks/useFeaturedBusinesses';
 import { useForYouBusinesses } from '../../hooks/useForYou';
@@ -36,6 +37,7 @@ import { homeTokens } from './home/HomeTokens';
 import { FROSTED_CARD_BORDER_COLOR } from '../../styles/cardSurface';
 import { getOverlayShadowStyle } from '../../styles/overlayShadow';
 import { CARD_CTA_RADIUS, CARD_RADIUS } from '../../styles/radii';
+import { useGlobalScrollToTop } from '../../hooks/useGlobalScrollToTop';
 
 const ctaShadowStyle = getOverlayShadowStyle(CARD_CTA_RADIUS);
 
@@ -44,6 +46,9 @@ export default function HomeScreen() {
   const { user } = useAuthSession();
   const headerProgress = useRef(new Animated.Value(1)).current;
   const headerCollapsedRef = useRef(false);
+  const homeFeedRef = useRef<ScrollView>(null);
+  const searchResultsRef = useRef<FlatList<BusinessListItemDto> | null>(null);
+  const scrollTopVisibleRef = useRef(false);
 
   const [searchInput, setSearchInput] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -54,6 +59,7 @@ export default function HomeScreen() {
   const [locationDenied, setLocationDenied] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  const [showScrollTopButton, setShowScrollTopButton] = useState(false);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -146,6 +152,34 @@ export default function HomeScreen() {
     router.push(routes.reviewer(reviewer.id) as never);
   };
 
+  const setScrollTopVisible = useCallback((visible: boolean) => {
+    if (scrollTopVisibleRef.current === visible) {
+      return;
+    }
+
+    scrollTopVisibleRef.current = visible;
+    setShowScrollTopButton(visible);
+  }, []);
+
+  const handleGlobalScrollToTop = useCallback(() => {
+    if (isSearchActive) {
+      searchResultsRef.current?.scrollToOffset({ offset: 0, animated: true });
+      return;
+    }
+
+    homeFeedRef.current?.scrollTo({ y: 0, animated: true });
+  }, [isSearchActive]);
+
+  useGlobalScrollToTop({
+    visible: showScrollTopButton,
+    enabled: true,
+    onScrollToTop: handleGlobalScrollToTop,
+  });
+
+  useEffect(() => {
+    setScrollTopVisible(false);
+  }, [isSearchActive, setScrollTopVisible]);
+
   const headerPaddingTop = headerProgress.interpolate({
     inputRange: [0, 1],
     outputRange: [6, 10],
@@ -210,6 +244,7 @@ export default function HomeScreen() {
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const offsetY = event.nativeEvent.contentOffset.y;
+      setScrollTopVisible(offsetY > 280);
 
       if (offsetY > 56) {
         setHeaderState(true);
@@ -217,7 +252,7 @@ export default function HomeScreen() {
         setHeaderState(false);
       }
     },
-    [setHeaderState]
+    [setHeaderState, setScrollTopVisible]
   );
 
   return (
@@ -277,6 +312,7 @@ export default function HomeScreen() {
 
       {isSearchActive ? (
         <HomeSearchResults
+          listRef={searchResultsRef}
           query={debouncedQuery}
           results={search.businesses}
           isLoading={search.isLoading}
@@ -299,6 +335,7 @@ export default function HomeScreen() {
         />
       ) : (
         <Animated.ScrollView
+          ref={homeFeedRef}
           style={styles.scroll}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void handleRefresh()} />}
@@ -306,13 +343,12 @@ export default function HomeScreen() {
           onScroll={handleScroll}
           scrollEventThrottle={16}
         >
-          <MapPreviewHero />
-
           <View style={styles.section}>
             <HomeSectionHeader
               title="For You"
               actionLabel={user ? 'See More' : undefined}
               onPress={user ? () => router.push(routes.forYou() as never) : undefined}
+              delay={0}
             />
 
             {!user ? (
@@ -383,6 +419,7 @@ export default function HomeScreen() {
               title="Trending Now"
               actionLabel="See More"
               onPress={() => router.push(routes.trending() as never)}
+              delay={100}
             />
             <HomeBusinessRow
               items={trending.data?.businesses ?? []}
@@ -398,6 +435,7 @@ export default function HomeScreen() {
               title="Events & Specials"
               actionLabel="See More"
               onPress={() => router.push(routes.eventsSpecials() as never)}
+              delay={200}
             />
             <HomeEventsSpecialsRow
               items={events.items}

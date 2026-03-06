@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Animated,
   Platform,
   StyleSheet,
@@ -9,6 +8,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { SkeletonBlock } from '../../../components/SkeletonBlock';
 import { Text, TextInput } from '../../../components/Typography';
 import { homeTokens } from './HomeTokens';
 
@@ -105,7 +105,7 @@ export function HomeSearchBar({ value, onChangeText, onClear, isFetching = false
 
   return (
     <View style={[styles.wrap, focused ? styles.wrapFocused : null]}>
-      <Ionicons name="search-outline" size={18} color={homeTokens.textTertiary} style={styles.icon} />
+      <Ionicons name="search" size={18} color={homeTokens.textTertiary} style={styles.icon} />
       <View style={styles.inputWrap}>
         {isPlaceholderVisible ? (
           <View pointerEvents="none" style={styles.placeholderWrap}>
@@ -135,7 +135,7 @@ export function HomeSearchBar({ value, onChangeText, onClear, isFetching = false
           onBlur={() => setFocused(false)}
         />
       </View>
-      {isFetching ? <ActivityIndicator size="small" color={homeTokens.sageDark} /> : null}
+      {isFetching ? <SkeletonBlock style={styles.fetchingIndicator} /> : null}
       {value.length > 0 ? (
         <TouchableOpacity style={styles.clearButton} onPress={onClear} activeOpacity={0.8}>
           <Ionicons name="close" size={16} color={homeTokens.charcoal} />
@@ -206,5 +206,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: homeTokens.offWhite,
     marginLeft: 8,
+  },
+  fetchingIndicator: {
+    width: 16,
+    height: 16,
+    borderRadius: 999,
+    marginLeft: 6,
+    backgroundColor: 'rgba(125,155,118,0.42)',
   },
 });

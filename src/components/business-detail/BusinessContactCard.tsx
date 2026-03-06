@@ -137,7 +137,7 @@ export function BusinessContactCard({ businessId, businessName, phone }: Props) 
         ) : (
           <>
             <View style={[styles.whatsappButton, styles.buttonDisabled]}>
-              <Text style={styles.whatsappButtonText}>WhatsApp</Text>
+              <Text style={[styles.whatsappButtonText, styles.buttonDisabledText]}>WhatsApp</Text>
             </View>
             <Text style={styles.hintText}>WhatsApp is unavailable for this business.</Text>
           </>
@@ -190,7 +190,9 @@ export function BusinessContactCard({ businessId, businessName, phone }: Props) 
           disabled={!isFormEnabled || submitState === 'loading'}
           onPress={handleSubmit}
         >
-          <Text style={styles.submitButtonText}>{submitState === 'loading' ? 'Sending...' : 'Submit'}</Text>
+          <Text style={[styles.submitButtonText, (!isFormEnabled || submitState === 'loading') ? styles.buttonDisabledText : null]}>
+            {submitState === 'loading' ? 'Sending...' : 'Submit'}
+          </Text>
         </Pressable>
 
         {submitMessage ? (
@@ -268,7 +270,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   buttonDisabled: {
-    opacity: 0.6,
+    opacity: 1,
+    backgroundColor: 'rgba(229,224,229,0.86)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.38)',
+  },
+  buttonDisabledText: {
+    color: 'rgba(45,55,72,0.45)',
   },
   hintText: {
     color: businessDetailColors.textSubtle,

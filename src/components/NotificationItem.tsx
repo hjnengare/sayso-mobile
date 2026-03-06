@@ -4,15 +4,15 @@ import type { NotificationDto } from '@sayso/contracts';
 import { Text } from './Typography';
 
 const TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  review: 'star-outline',
-  business: 'storefront-outline',
-  badge_earned: 'ribbon-outline',
-  review_helpful: 'thumbs-up-outline',
-  claim_approved: 'checkmark-circle-outline',
-  business_approved: 'checkmark-circle-outline',
-  comment_reply: 'chatbubble-outline',
-  milestone_achievement: 'trophy-outline',
-  message: 'mail-outline',
+  review: 'star',
+  business: 'storefront',
+  badge_earned: 'ribbon',
+  review_helpful: 'thumbs-up',
+  claim_approved: 'checkmark-circle',
+  business_approved: 'checkmark-circle',
+  comment_reply: 'chatbubble',
+  milestone_achievement: 'trophy',
+  message: 'mail',
 };
 
 function timeAgo(dateStr: string): string {
@@ -26,7 +26,7 @@ function timeAgo(dateStr: string): string {
 type Props = { notification: NotificationDto };
 
 export function NotificationItem({ notification }: Props) {
-  const icon = TYPE_ICONS[notification.type] ?? 'notifications-outline';
+  const icon = TYPE_ICONS[notification.type] ?? 'notifications';
 
   return (
     <View style={[styles.container, !notification.read && styles.unread]}>

@@ -113,8 +113,8 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   description: {
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 14,
+    lineHeight: 20,
     color: 'rgba(45, 55, 72, 0.72)',
     marginTop: 7,
   },

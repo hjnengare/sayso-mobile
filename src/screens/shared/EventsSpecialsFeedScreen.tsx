@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
-  Pressable,
   RefreshControl,
   StyleSheet,
   View,
@@ -18,6 +17,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { Text } from '../../components/Typography';
 import { FeedFooter } from '../../components/feed/FeedFooter';
 import { LoadMoreButton } from '../../components/feed/LoadMoreButton';
+import { useGlobalScrollToTop } from '../../hooks/useGlobalScrollToTop';
 
 const REQUEST_LIMIT = 20;
 const VISIBLE_CHUNK_SIZE = 12;
@@ -47,9 +47,19 @@ export function EventsSpecialsFeedScreen({ subtitle }: Props) {
   const listRef = useRef<FlatList<EventSpecialListItemDto>>(null);
   const hasRestoredScrollRef = useRef(false);
   const initialOffset = EVENT_FEED_SCROLL_OFFSETS.get('events-specials') ?? 0;
-  const [showBackToTop, setShowBackToTop] = useState(initialOffset > BACK_TO_TOP_THRESHOLD);
+  const [showScrollTopButton, setShowScrollTopButton] = useState(initialOffset > BACK_TO_TOP_THRESHOLD);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(VISIBLE_CHUNK_SIZE);
+
+  const handleScrollToTop = useCallback(() => {
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
+  }, []);
+
+  useGlobalScrollToTop({
+    visible: showScrollTopButton,
+    enabled: true,
+    onScrollToTop: handleScrollToTop,
+  });
 
   const query = useInfiniteQuery({
     queryKey: ['events-specials-feed', REQUEST_LIMIT],
@@ -126,7 +136,7 @@ export function EventsSpecialsFeedScreen({ subtitle }: Props) {
     const nextOffset = event.nativeEvent.contentOffset.y;
     EVENT_FEED_SCROLL_OFFSETS.set('events-specials', nextOffset);
     const shouldShow = nextOffset > BACK_TO_TOP_THRESHOLD;
-    setShowBackToTop((current) => (current === shouldShow ? current : shouldShow));
+    setShowScrollTopButton((current) => (current === shouldShow ? current : shouldShow));
   }, []);
 
   const footer = useMemo(() => {
@@ -204,15 +214,6 @@ export function EventsSpecialsFeedScreen({ subtitle }: Props) {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       />
-
-      {showBackToTop ? (
-        <Pressable
-          style={({ pressed }) => [styles.backToTop, pressed ? styles.backToTopPressed : null]}
-          onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })}
-        >
-          <Text style={styles.backToTopText}>↑ Top</Text>
-        </Pressable>
-      ) : null}
     </View>
   );
 }
@@ -258,30 +259,5 @@ const styles = StyleSheet.create({
   footerSpacer: {
     height: 12,
   },
-  backToTop: {
-    position: 'absolute',
-    right: 20,
-    bottom: 28,
-    minHeight: 44,
-    paddingHorizontal: 16,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderWidth: 1,
-    borderColor: 'rgba(45, 55, 72, 0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 4,
-  },
-  backToTopPressed: {
-    opacity: 0.92,
-  },
-  backToTopText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#2D3748',
-  },
 });
+

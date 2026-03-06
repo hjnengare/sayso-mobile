@@ -1,5 +1,8 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   FlatList,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   RefreshControl,
   SafeAreaView,
   StyleSheet,
@@ -7,8 +10,10 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import type { BusinessListItemDto } from '@sayso/contracts';
 import { useSavedBusinesses, useUnsaveBusiness } from '../../hooks/useSavedBusinesses';
 import { useAuthSession } from '../../hooks/useSession';
+import { useGlobalScrollToTop } from '../../hooks/useGlobalScrollToTop';
 import { routes } from '../../navigation/routes';
 import { AppHeader } from '../../components/AppHeader';
 import { BusinessCard } from '../../components/BusinessCard';
@@ -21,6 +26,41 @@ export default function SavedScreen() {
   const router = useRouter();
   const { data, isLoading, refetch, isRefetching } = useSavedBusinesses();
   const unsave = useUnsaveBusiness();
+  const listRef = useRef<FlatList<BusinessListItemDto> | null>(null);
+  const scrollTopVisibleRef = useRef(false);
+  const [showScrollTopButton, setShowScrollTopButton] = useState(false);
+
+  const setScrollTopVisible = useCallback((visible: boolean) => {
+    if (scrollTopVisibleRef.current === visible) return;
+    scrollTopVisibleRef.current = visible;
+    setShowScrollTopButton(visible);
+  }, []);
+
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      setScrollTopVisible(event.nativeEvent.contentOffset.y > 220);
+    },
+    [setScrollTopVisible]
+  );
+
+  const handleScrollToTop = useCallback(() => {
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
+  }, []);
+
+  const businesses = data?.businesses ?? [];
+  const showSavedList = businesses.length > 0 && !isLoading;
+
+  useGlobalScrollToTop({
+    visible: showScrollTopButton,
+    enabled: Boolean(user) && showSavedList,
+    onScrollToTop: handleScrollToTop,
+  });
+
+  useEffect(() => {
+    if (!user || !showSavedList) {
+      setScrollTopVisible(false);
+    }
+  }, [setScrollTopVisible, showSavedList, user]);
 
   if (!user) {
     return (
@@ -36,8 +76,6 @@ export default function SavedScreen() {
       </SafeAreaView>
     );
   }
-
-  const businesses = data?.businesses ?? [];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -59,6 +97,7 @@ export default function SavedScreen() {
         />
       ) : (
         <FlatList
+          ref={listRef}
           data={businesses}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
@@ -76,6 +115,8 @@ export default function SavedScreen() {
           contentContainerStyle={styles.list}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
           showsVerticalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
         />
       )}
     </SafeAreaView>

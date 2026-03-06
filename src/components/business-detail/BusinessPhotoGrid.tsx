@@ -67,12 +67,25 @@ export function BusinessPhotoGrid({ businessName, photos }: Props) {
           </Pressable>
         </>
       ) : (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>No photos yet</Text>
-          <Text style={styles.emptyBody}>
-            Photos from this business profile will appear here when gallery images are available.
-          </Text>
-        </View>
+        <>
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyBodyCenter}>
+              Photos from this business profile will appear here once gallery images are available.
+            </Text>
+            <Text style={styles.emptyBodySubtle}>
+              This section uses the business gallery images for consistency.
+            </Text>
+          </View>
+          
+          <View style={styles.emptyHintRow}>
+            <Ionicons name="arrow-down" size={14} color="rgba(45,55,72,0.4)" />
+            <Text style={styles.emptyHintText}>Scroll down for similar businesses at the bottom</Text>
+          </View>
+
+          <Pressable style={styles.viewMoreButton}>
+            <Text style={styles.viewMoreText}>View More</Text>
+          </Pressable>
+        </>
       )}
 
       <Modal animationType="fade" transparent visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
@@ -157,19 +170,40 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     borderRadius: 10,
-    padding: 14,
-    backgroundColor: 'rgba(229,224,229,0.4)',
-    gap: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 32,
+    backgroundColor: 'rgba(229,224,229,0.6)',
+    gap: 8,
+    alignItems: 'center',
+    minHeight: 140,
+    justifyContent: 'center',
   },
-  emptyTitle: {
-    color: businessDetailColors.charcoal,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  emptyBody: {
+  emptyBodyCenter: {
     color: businessDetailColors.textMuted,
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  emptyBodySubtle: {
+    color: 'rgba(45,55,72,0.5)',
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  emptyHintRow: {
+    marginTop: 8,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'center',
+  },
+  emptyHintText: {
+    color: 'rgba(45,55,72,0.4)',
+    fontSize: 12,
+    fontWeight: '500',
   },
   modalBackdrop: {
     flex: 1,

@@ -1,6 +1,15 @@
-import { SafeAreaView, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import {
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { Stack } from 'expo-router';
 import { Text } from '../../components/Typography';
+import { useGlobalScrollToTop } from '../../hooks/useGlobalScrollToTop';
 import { CARD_RADIUS } from '../../styles/radii';
 
 type Props = {
@@ -12,10 +21,42 @@ type Props = {
 };
 
 export function StaticContentScreen({ title, sections }: Props) {
+  const scrollRef = useRef<ScrollView | null>(null);
+  const scrollTopVisibleRef = useRef(false);
+  const [showScrollTopButton, setShowScrollTopButton] = useState(false);
+
+  const setScrollTopVisible = useCallback((visible: boolean) => {
+    if (scrollTopVisibleRef.current === visible) return;
+    scrollTopVisibleRef.current = visible;
+    setShowScrollTopButton(visible);
+  }, []);
+
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      setScrollTopVisible(event.nativeEvent.contentOffset.y > 220);
+    },
+    [setScrollTopVisible]
+  );
+
+  const handleScrollToTop = useCallback(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, []);
+
+  useGlobalScrollToTop({
+    visible: showScrollTopButton,
+    enabled: true,
+    onScrollToTop: handleScrollToTop,
+  });
+
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ title }} />
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={styles.content}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
         {sections.map((section) => (
           <View key={`${title}-${section.heading}`} style={styles.card}>
             <Text style={styles.heading}>{section.heading}</Text>

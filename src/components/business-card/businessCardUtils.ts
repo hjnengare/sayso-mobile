@@ -88,25 +88,25 @@ export function getCategoryIconName(
   const searchTerm = normalizedSubInterest || normalizedCategory;
 
   if (searchTerm.includes('salon') || searchTerm.includes('hairdresser') || searchTerm.includes('nail')) {
-    return 'cut-outline';
+    return 'cut';
   }
   if (searchTerm.includes('cafe') || searchTerm.includes('coffee')) {
-    return 'cafe-outline';
+    return 'cafe';
   }
   if (searchTerm.includes('restaurant') || searchTerm.includes('dining') || searchTerm.includes('food')) {
-    return 'restaurant-outline';
+    return 'restaurant';
   }
   if (searchTerm.includes('bar') || searchTerm.includes('pub')) {
-    return 'wine-outline';
+    return 'wine';
   }
   if (searchTerm.includes('gym') || searchTerm.includes('fitness') || searchTerm.includes('workout')) {
-    return 'barbell-outline';
+    return 'barbell';
   }
   if (searchTerm.includes('spa') || searchTerm.includes('wellness') || searchTerm.includes('massage')) {
-    return 'leaf-outline';
+    return 'leaf';
   }
   if (searchTerm.includes('health') || searchTerm.includes('medical')) {
-    return 'heart-outline';
+    return 'heart';
   }
   if (
     searchTerm.includes('shop') ||
@@ -115,22 +115,22 @@ export function getCategoryIconName(
     searchTerm.includes('fashion') ||
     searchTerm.includes('clothing')
   ) {
-    return 'bag-outline';
+    return 'bag';
   }
   if (searchTerm.includes('book') || searchTerm.includes('library')) {
-    return 'book-outline';
+    return 'book';
   }
   if (searchTerm.includes('education') || searchTerm.includes('school') || searchTerm.includes('learn')) {
-    return 'school-outline';
+    return 'school';
   }
   if (searchTerm.includes('finance') || searchTerm.includes('bank') || searchTerm.includes('insurance')) {
-    return 'card-outline';
+    return 'card';
   }
   if (searchTerm.includes('business') || searchTerm.includes('office') || searchTerm.includes('professional')) {
-    return 'briefcase-outline';
+    return 'briefcase';
   }
   if (searchTerm.includes('music') || searchTerm.includes('concert') || searchTerm.includes('venue')) {
-    return 'musical-notes-outline';
+    return 'musical-notes';
   }
   if (
     searchTerm.includes('movie') ||
@@ -138,20 +138,20 @@ export function getCategoryIconName(
     searchTerm.includes('theater') ||
     searchTerm.includes('theatre')
   ) {
-    return 'film-outline';
+    return 'film';
   }
   if (searchTerm.includes('art') || searchTerm.includes('gallery') || searchTerm.includes('museum')) {
-    return 'color-palette-outline';
+    return 'color-palette';
   }
   if (searchTerm.includes('travel') || searchTerm.includes('transport') || searchTerm.includes('hotel')) {
-    return 'location-outline';
+    return 'location';
   }
   if (searchTerm.includes('car') || searchTerm.includes('auto') || searchTerm.includes('vehicle')) {
-    return 'car-outline';
+    return 'car';
   }
   if (searchTerm.includes('home') || searchTerm.includes('decor') || searchTerm.includes('furniture')) {
-    return 'home-outline';
+    return 'home';
   }
 
-  return 'pricetag-outline';
+  return 'pricetag';
 }

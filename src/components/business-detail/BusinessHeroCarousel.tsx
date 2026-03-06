@@ -4,16 +4,24 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../Typography';
 import { businessDetailColors, businessDetailSpacing } from './styles';
+import { getBusinessPlaceholderFromCandidates } from '../../lib/businessPlaceholders';
 
 type Props = {
   businessName: string;
   images: string[];
   rating: number;
   verified?: boolean;
+  subcategorySlug?: string | null;
+  interestId?: string | null;
 };
 
-export function BusinessHeroCarousel({ businessName, images, rating, verified }: Props) {
+export function BusinessHeroCarousel({ businessName, images, rating, verified, subcategorySlug, interestId }: Props) {
   const [index, setIndex] = useState(0);
+
+  const placeholderAsset = useMemo(
+    () => getBusinessPlaceholderFromCandidates([subcategorySlug, interestId]),
+    [subcategorySlug, interestId]
+  );
 
   const activeIndex = useMemo(() => {
     if (images.length === 0) return 0;
@@ -27,12 +35,19 @@ export function BusinessHeroCarousel({ businessName, images, rating, verified }:
   return (
     <View style={styles.wrap}>
       {activeImage ? (
-        <Image source={{ uri: activeImage }} style={styles.image} contentFit="cover" />
+        <>
+          {/* Blurred ambient background layer */}
+          <Image
+            source={{ uri: activeImage }}
+            style={styles.imageBlur}
+            contentFit="cover"
+            blurRadius={28}
+          />
+          {/* Sharp foreground image */}
+          <Image source={{ uri: activeImage }} style={styles.image} contentFit="cover" />
+        </>
       ) : (
-        <View style={styles.placeholder}>
-          <Ionicons name="image-outline" size={40} color="rgba(255,255,255,0.9)" />
-          <Text style={styles.placeholderText}>{businessName}</Text>
-        </View>
+        <Image source={placeholderAsset} style={styles.image} contentFit="cover" />
       )}
 
       <View pointerEvents="none" style={styles.gradientOverlay} />
@@ -81,6 +96,12 @@ export function BusinessHeroCarousel({ businessName, images, rating, verified }:
           ))}
         </View>
       ) : null}
+
+      {hasMultiple ? (
+        <View style={styles.counter}>
+          <Text style={styles.counterText}>{activeIndex + 1} / {images.length}</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -89,24 +110,16 @@ const styles = StyleSheet.create({
   wrap: {
     width: '100%',
     height: 288,
-    borderRadius: businessDetailSpacing.cardRadius,
     overflow: 'hidden',
     backgroundColor: businessDetailColors.cardBg,
   },
+  imageBlur: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.6,
+    transform: [{ scale: 1.15 }],
+  },
   image: {
     ...StyleSheet.absoluteFillObject,
-  },
-  placeholder: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: businessDetailColors.cardBg,
-  },
-  placeholderText: {
-    color: businessDetailColors.white,
-    fontSize: 14,
-    fontWeight: '700',
   },
   gradientOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -188,5 +201,19 @@ const styles = StyleSheet.create({
   indicatorActive: {
     width: 24,
     backgroundColor: businessDetailColors.white,
+  },
+  counter: {
+    position: 'absolute',
+    bottom: 14,
+    right: 14,
+    borderRadius: 999,
+    backgroundColor: 'rgba(17,24,39,0.65)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  counterText: {
+    color: businessDetailColors.white,
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

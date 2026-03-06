@@ -15,7 +15,7 @@ export function HeaderBellButton() {
       onPress={() => router.push(routes.notifications() as never)}
       activeOpacity={0.8}
     >
-      <Ionicons name="notifications-outline" size={22} color="#111827" />
+      <Ionicons name="notifications" size={22} color="#111827" />
       {unreadCount > 0 ? (
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>

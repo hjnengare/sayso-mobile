@@ -2,7 +2,6 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useNotifications } from '../../src/hooks/useNotifications';
-import { FROSTED_CARD_BORDER_COLOR } from '../../src/styles/cardSurface';
 
 const NAVBAR_BG_COLOR = '#722F37';
 
@@ -77,8 +76,7 @@ const styles = StyleSheet.create({
   nativeTabBarBackground: {
     flex: 1,
     backgroundColor: NAVBAR_BG_COLOR,
-    borderTopWidth: 1,
-    borderTopColor: FROSTED_CARD_BORDER_COLOR,
+    borderTopWidth: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -6 },
     shadowOpacity: 0.04,
