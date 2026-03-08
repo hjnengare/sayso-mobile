@@ -20,7 +20,8 @@
       "expo-router",
       "expo-secure-store",
       "expo-notifications",
-      "expo-font"
+      "expo-font",
+      "./plugins/with-transport-security"
     ],
     "experiments": {
       "typedRoutes": true

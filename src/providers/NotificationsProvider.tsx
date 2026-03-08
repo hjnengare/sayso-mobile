@@ -34,8 +34,6 @@ async function registerPushToken() {
     body: JSON.stringify({
       expoPushToken: token.data,
       platform: Device.osName?.toLowerCase() === 'ios' ? 'ios' : 'android',
-      deviceId: Device.osInternalBuildId || Device.modelId || null,
-      appVersion: Device.osVersion || null,
     }),
   });
 }

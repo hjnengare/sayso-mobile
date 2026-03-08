@@ -1,15 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import type { FeaturedBusinessDto, FeaturedBusinessesResponseDto } from '@sayso/contracts';
-import { ENV } from '../lib/env';
-import { supabase } from '../lib/supabase';
-
-async function fetchWithAuth(path: string): Promise<Response> {
-  const { data } = await supabase.auth.getSession();
-  const accessToken = data.session?.access_token;
-  const headers = new Headers({ 'Content-Type': 'application/json' });
-  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
-  return fetch(`${ENV.apiBaseUrl}${path}`, { headers });
-}
+import { ApiError, apiFetch } from '../lib/api';
 
 type BusinessesFallbackResponse = {
   businesses?: FeaturedBusinessDto[];
@@ -25,10 +16,17 @@ export function useFeaturedBusinesses(limit = 12, region: string | null = null, 
       params.set('limit', String(limit));
       if (region) params.set('region', region);
 
-      let response = await fetchWithAuth(`/api/featured?${params.toString()}`);
       let source: 'primary' | 'fallback' = 'primary';
+      let payload: FeaturedBusinessesResponseDto | FeaturedBusinessDto[] | BusinessesFallbackResponse;
 
-      if (response.status === 404) {
+      try {
+        payload = await apiFetch<FeaturedBusinessesResponseDto | FeaturedBusinessDto[]>(
+          `/api/featured?${params.toString()}`
+        );
+      } catch (error) {
+        if (!(error instanceof ApiError) || error.status !== 404) {
+          throw error;
+        }
         source = 'fallback';
         const fallbackParams = new URLSearchParams();
         fallbackParams.set('limit', String(limit));
@@ -36,18 +34,11 @@ export function useFeaturedBusinesses(limit = 12, region: string | null = null, 
         fallbackParams.set('sort_by', 'total_rating');
         fallbackParams.set('sort_order', 'desc');
         if (region) fallbackParams.set('location', region);
-        response = await fetchWithAuth(`/api/businesses?${fallbackParams.toString()}`);
-      }
-
-      if (!response.ok) {
-        const body = await response.text().catch(() => '');
-        const error = new Error(body || `HTTP ${response.status}`) as Error & { statusCode?: number };
-        error.statusCode = response.status;
-        throw error;
+        payload = await apiFetch<BusinessesFallbackResponse>(`/api/businesses?${fallbackParams.toString()}`);
       }
 
       if (source === 'fallback') {
-        const fallbackData = (await response.json()) as BusinessesFallbackResponse;
+        const fallbackData = payload as BusinessesFallbackResponse;
         const fallbackList = fallbackData.businesses ?? fallbackData.data ?? [];
         return fallbackList.map((business, index) => ({
           ...business,
@@ -61,20 +52,22 @@ export function useFeaturedBusinesses(limit = 12, region: string | null = null, 
         }));
       }
 
-      const payload = (await response.json()) as FeaturedBusinessesResponseDto | FeaturedBusinessDto[];
       if (Array.isArray(payload)) return payload;
       return payload.data ?? payload.businesses ?? [];
     },
     staleTime: 60_000,
   });
 
-  const error = query.error as (Error & { statusCode?: number }) | null;
+  const error = query.error as (Error & { statusCode?: number; status?: number }) | null;
+  const statusCode = (error && 'status' in error && typeof error.status === 'number')
+    ? error.status
+    : error?.statusCode ?? null;
 
   return {
     featuredBusinesses: query.data ?? [],
     isLoading: enabled && query.isLoading,
     error: error?.message ?? null,
-    statusCode: error?.statusCode ?? null,
+    statusCode,
     refetch: query.refetch,
   };
 }

@@ -22,6 +22,7 @@ import { AppHeader } from '../../components/AppHeader';
 import { LinkRow } from '../../components/LinkRow';
 import { SkeletonBlock } from '../../components/SkeletonBlock';
 import { Text, TextInput } from '../../components/Typography';
+import { useSecurity } from '../../providers/SecurityProvider';
 
 function ProfileSkeleton() {
   return (
@@ -62,6 +63,7 @@ function ProfileSkeleton() {
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuthSession();
+  const { guardSensitiveAction } = useSecurity();
   const { unreadCount } = useNotifications();
   const router = useRouter();
   const { data, isLoading, refetch, isRefetching } = useProfile();
@@ -135,6 +137,11 @@ export default function ProfileScreen() {
   };
 
   const handleSignOut = async () => {
+    const gate = guardSensitiveAction('account_action');
+    if (!gate.allowed) {
+      Alert.alert('Action blocked', gate.reason || 'This action is blocked on this device.');
+      return;
+    }
     try {
       await signOut();
     } catch {
