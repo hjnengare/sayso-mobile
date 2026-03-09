@@ -16,7 +16,18 @@
       "Bash(for d in \"c:\\\\Users\\\\HilarioNengare\\\\Projects\\\\sayso_mobile\\\\assets\\\\businessImagePlaceholders\"/*/)",
       "Bash(do echo \"$d:\")",
       "Read(//c/Users/HilarioNengare/Projects/sayso_mobile/**)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(npx tsc --noEmit --project tsconfig.json)",
+      "Bash(find /Users/hilarionengare/sayso-web/src/app -path \"*/\\(interests|subcategories|deal-breakers|complete\\)*\" -name \"page.tsx\")",
+      "Bash(npx tsc --noEmit)",
+      "Bash(grep -l \"ScrollView\\\\|FlatList\\\\|FlashList\" /Users/hilarionengare/sayso-mobile/app/\\\\\\(stack\\\\\\)/*.tsx)",
+      "Bash(ls -la \"/Users/hilarionengare/sayso-mobile/app/\\(stack\\)/\")",
+      "Bash(git -C /Users/hilarionengare/sayso-mobile remote -v)",
+      "Bash(git add app/\\\\\\(modals\\\\\\)/complete.tsx app/\\\\\\(modals\\\\\\)/onboarding/index.tsx app/\\\\\\(modals\\\\\\)/register.tsx app/\\\\\\(stack\\\\\\)/deal-breakers.tsx app/\\\\\\(stack\\\\\\)/events-specials.tsx app/\\\\\\(stack\\\\\\)/for-you.tsx app/\\\\\\(stack\\\\\\)/interests.tsx app/\\\\\\(stack\\\\\\)/subcategories.tsx src/components/StackPageHeader.tsx src/components/business-detail/BusinessPageHeader.tsx src/components/business-detail/BusinessReviewsSection.tsx src/components/event-detail/EventSpecialReviewsSection.tsx src/components/feed/BusinessFeed.tsx src/screens/modals/LoginScreen.tsx src/screens/shared/EventsSpecialsFeedScreen.tsx src/screens/stack/BusinessScreen.tsx src/screens/stack/EventSpecialScreen.tsx src/screens/stack/TrendingScreen.tsx src/screens/tabs/HomeScreen.tsx src/screens/tabs/SearchScreen.tsx src/screens/tabs/home/HomeCommunityHighlightsSection.tsx src/components/onboarding/ src/components/review-card/ src/components/reviewer-card/ src/hooks/useReviewHelpful.ts src/lib/anonymousClient.ts src/screens/modals/CompleteScreen.tsx src/screens/modals/OnboardingScreen.tsx src/screens/stack/DealBreakersScreen.tsx src/screens/stack/InterestsScreen.tsx src/screens/stack/SubcategoriesScreen.tsx)",
+      "Bash(git commit:*)",
+      "Bash(git push origin main)",
+      "Bash(git remote set-url origin git@github.com:hjnengare/sayso-mobile.git)",
+      "Bash(ssh -T git@github.com)"
     ]
   }
 }

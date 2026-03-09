@@ -1,4 +1,4 @@
-export type ParentTab = 'home' | 'search' | 'explore' | 'saved' | 'profile';
+export type ParentTab = 'home' | 'leaderboard' | 'saved' | 'profile';
 
 export type ReviewTargetType = 'business' | 'event' | 'special';
 

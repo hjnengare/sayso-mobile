@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { SkeletonBlock } from '../../components/SkeletonBlock';
 import { Text } from '../../components/Typography';
 import { BusinessPageHeader } from '../../components/business-detail/BusinessPageHeader';
 import { businessDetailSpacing } from '../../components/business-detail/styles';
@@ -25,7 +26,9 @@ import type { FeaturedBusinessDto } from '@sayso/contracts';
 import { useTopReviewers } from '../../hooks/useTopReviewers';
 import { useFeaturedBusinesses } from '../../hooks/useFeaturedBusinesses';
 import { useGlobalScrollToTop } from '../../hooks/useGlobalScrollToTop';
+import { useRealtimeQueryInvalidation } from '../../hooks/useRealtimeQueryInvalidation';
 import { routes } from '../../navigation/routes';
+import { TransitionItem } from '../../components/motion/TransitionItem';
 
 const PAGE_BG = '#E5E0E5';
 const CARD_BG = '#9DAB9B';
@@ -63,6 +66,29 @@ export default function LeaderboardScreen() {
   const { reviewers, isLoading: loadingReviewers, error: reviewersError, refetch: refetchReviewers } = useTopReviewers(20);
   const { featuredBusinesses, isLoading: loadingBusinesses } = useFeaturedBusinesses(50, null, businessesEnabled);
 
+  const realtimeTargets = useMemo(
+    () => [
+      {
+        key: 'leaderboard-reviews',
+        table: 'reviews',
+        queryKeys: [['top-reviewers'], ['featured-businesses']],
+      },
+      {
+        key: 'leaderboard-review-helpful-votes',
+        table: 'review_helpful_votes',
+        queryKeys: [['top-reviewers']],
+      },
+      {
+        key: 'leaderboard-businesses',
+        table: 'businesses',
+        queryKeys: [['featured-businesses']],
+      },
+    ],
+    []
+  );
+
+  useRealtimeQueryInvalidation(realtimeTargets);
+
   // Scroll + header state
   const scrollRef = useRef<ScrollView | null>(null);
   const scrollTopVisibleRef = useRef(false);
@@ -70,8 +96,6 @@ export default function LeaderboardScreen() {
   const headerCollapsedRef = useRef(false);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const headerProgress = useRef(new Animated.Value(0)).current;
-  const fabAnim = useRef(new Animated.Value(0)).current;
-
   const setScrollTopVisible = useCallback((v: boolean) => {
     if (scrollTopVisibleRef.current === v) return;
     scrollTopVisibleRef.current = v;
@@ -83,15 +107,6 @@ export default function LeaderboardScreen() {
   }, []);
 
   useGlobalScrollToTop({ visible: showScrollTop, enabled: true, onScrollToTop: handleScrollToTop });
-
-  useEffect(() => {
-    Animated.spring(fabAnim, {
-      toValue: showScrollTop ? 1 : 0,
-      damping: 18,
-      stiffness: 260,
-      useNativeDriver: true,
-    }).start();
-  }, [showScrollTop, fabAnim]);
 
   const setHeaderState = useCallback((collapsed: boolean) => {
     if (headerCollapsedRef.current === collapsed) return;
@@ -198,178 +213,192 @@ export default function LeaderboardScreen() {
         scrollEventThrottle={16}
       >
         {/* Hero */}
-        <View style={s.hero}>
-          <Text style={s.heroTitle}>Community Highlights</Text>
-          <Text style={s.heroSub}>
-            Celebrate the top contributors and businesses in our community. See who's making a difference and discover the most loved local spots.
-          </Text>
-        </View>
+        <TransitionItem variant="header" index={0}>
+          <View style={s.hero}>
+            <Text style={s.heroTitle}>Community Highlights</Text>
+            <Text style={s.heroSub}>
+              Celebrate the top contributors and businesses in our community. See who&apos;s making a difference and discover the most loved local spots.
+            </Text>
+          </View>
+        </TransitionItem>
 
         {/* Tab switcher — matches web: white/80 container, sage active */}
-        <View style={s.tabContainer}>
-          <View style={s.tabRow}>
-            <Pressable
-              style={[s.tab, activeTab === 'contributors' && s.tabActive]}
-              onPress={() => handleTabChange('contributors')}
-            >
-              <Text style={[s.tabText, activeTab === 'contributors' && s.tabTextActive]}>
-                Top Contributors
-              </Text>
-            </Pressable>
-            <Pressable
-              style={[s.tab, activeTab === 'businesses' && s.tabActive]}
-              onPress={() => handleTabChange('businesses')}
-            >
-              <Text style={[s.tabText, activeTab === 'businesses' && s.tabTextActive]}>
-                Top Businesses
-              </Text>
-            </Pressable>
+        <TransitionItem variant="input" index={1}>
+          <View style={s.tabContainer}>
+            <View style={s.tabRow}>
+              <Pressable
+                style={[s.tab, activeTab === 'contributors' && s.tabActive]}
+                onPress={() => handleTabChange('contributors')}
+              >
+                <Text style={[s.tabText, activeTab === 'contributors' && s.tabTextActive]}>
+                  Top Contributors
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[s.tab, activeTab === 'businesses' && s.tabActive]}
+                onPress={() => handleTabChange('businesses')}
+              >
+                <Text style={[s.tabText, activeTab === 'businesses' && s.tabTextActive]}>
+                  Top Businesses
+                </Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
+        </TransitionItem>
 
         {/* Main card — sage background matching web card-bg */}
-        <View style={s.card}>
-          {/* Decorative orbs */}
-          <View style={s.orbTopRight} pointerEvents="none" />
-          <View style={s.orbBottomLeft} pointerEvents="none" />
+        <TransitionItem variant="card" index={2}>
+          <View style={s.card}>
+            {/* Decorative orbs */}
+            <View style={s.orbTopRight} pointerEvents="none" />
+            <View style={s.orbBottomLeft} pointerEvents="none" />
 
-          {activeTab === 'contributors' ? (
-            <>
-              {loadingReviewers ? (
-                <View style={s.skeletonWrap}>
-                  {Array.from({ length: 5 }, (_, i) => (
-                    <View key={i} style={s.skeletonRow} />
-                  ))}
-                </View>
-              ) : reviewersError ? (
-                <View style={s.emptyWrap}>
-                  <Text style={s.emptyText}>Couldn't load leaderboard.</Text>
-                  <Pressable style={s.retryBtn} onPress={() => void refetchReviewers()}>
-                    <Text style={s.retryText}>Retry</Text>
-                  </Pressable>
-                </View>
-              ) : reviewers.length === 0 ? (
-                <View style={s.emptyWrap}>
-                  <View style={s.emptyIcon}>
-                    <Ionicons name="trophy-outline" size={36} color={CHARCOAL_70} />
-                  </View>
-                  <Text style={s.emptyText}>No contributors yet. Be the first to write a review!</Text>
-                </View>
-              ) : (
-                <>
-                  <ContributorPodium reviewers={reviewers} />
-                  <View style={s.list}>
-                    {visibleContributors.map((r: (typeof reviewers)[number], i: number) => (
-                      <ContributorRow key={r.id} reviewer={r} rank={i + 1} />
+            {activeTab === 'contributors' ? (
+              <>
+                {loadingReviewers ? (
+                  <View style={s.skeletonWrap}>
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <View key={i} style={s.skeletonRow}>
+                        <View style={s.skeletonLeft}>
+                          <SkeletonBlock style={s.skeletonBadge} />
+                          <SkeletonBlock style={s.skeletonAvatar} />
+                          <View style={s.skeletonIdentity}>
+                            <SkeletonBlock style={s.skeletonName} />
+                            <SkeletonBlock style={s.skeletonSub} />
+                          </View>
+                        </View>
+                        <View style={s.skeletonRight}>
+                          <SkeletonBlock style={s.skeletonPill} />
+                          <SkeletonBlock style={s.skeletonTiny} />
+                        </View>
+                      </View>
                     ))}
                   </View>
-                  {reviewers.length > INITIAL_VISIBLE && (
-                    <Pressable
-                      style={s.expandBtn}
-                      onPress={() => setShowAllContributors(v => !v)}
-                    >
-                      {showAllContributors && <Ionicons name="chevron-up" size={15} color="#fff" />}
-                      <Text style={s.expandText}>
-                        {showAllContributors ? 'Show Less' : 'View Full Leaderboard'}
-                      </Text>
-                      {!showAllContributors && <Ionicons name="chevron-down" size={15} color="#fff" />}
+                ) : reviewersError ? (
+                  <View style={s.emptyWrap}>
+                    <Text style={s.emptyText}>Couldn&apos;t load leaderboard.</Text>
+                    <Pressable style={s.retryBtn} onPress={() => void refetchReviewers()}>
+                      <Text style={s.retryText}>Retry</Text>
                     </Pressable>
-                  )}
-                </>
-              )}
-            </>
-          ) : (
-            <>
-              {availableInterestIds.length > 0 && (
-                <InterestFilter
-                  availableIds={availableInterestIds}
-                  selected={selectedInterest}
-                  onSelect={setSelectedInterest}
-                />
-              )}
-
-              {loadingBusinesses ? (
-                <View style={s.skeletonWrap}>
-                  {Array.from({ length: 5 }, (_, i) => (
-                    <View key={i} style={s.skeletonRow} />
-                  ))}
-                </View>
-              ) : sortedBusinesses.length === 0 ? (
-                <View style={s.emptyWrap}>
-                  <View style={s.emptyIcon}>
-                    <Ionicons name="storefront-outline" size={36} color={CHARCOAL_70} />
                   </View>
-                  <Text style={s.emptyText}>No businesses yet.</Text>
-                </View>
-              ) : (
-                <>
-                  <BusinessPodium businesses={sortedBusinesses} />
-                  <View style={s.list}>
-                    {visibleBusinesses.map((b, i) => (
-                      <BusinessRow key={b.id} business={b} rank={i + 1} />
+                ) : reviewers.length === 0 ? (
+                  <View style={s.emptyWrap}>
+                    <View style={s.emptyIcon}>
+                      <Ionicons name="trophy-outline" size={36} color={CHARCOAL_70} />
+                    </View>
+                    <Text style={s.emptyText}>No contributors yet. Be the first to write a review!</Text>
+                  </View>
+                ) : (
+                  <>
+                    <ContributorPodium reviewers={reviewers} />
+                    <View style={s.list}>
+                      {visibleContributors.map((r: (typeof reviewers)[number], i: number) => (
+                        <ContributorRow key={r.id} reviewer={r} rank={i + 1} />
+                      ))}
+                    </View>
+                    {reviewers.length > INITIAL_VISIBLE && (
+                      <Pressable
+                        style={s.expandBtn}
+                        onPress={() => setShowAllContributors(v => !v)}
+                      >
+                        {showAllContributors && <Ionicons name="chevron-up" size={15} color="#fff" />}
+                        <Text style={s.expandText}>
+                          {showAllContributors ? 'Show Less' : 'View Full Leaderboard'}
+                        </Text>
+                        {!showAllContributors && <Ionicons name="chevron-down" size={15} color="#fff" />}
+                      </Pressable>
+                    )}
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                {availableInterestIds.length > 0 && (
+                  <InterestFilter
+                    availableIds={availableInterestIds}
+                    selected={selectedInterest}
+                    onSelect={setSelectedInterest}
+                  />
+                )}
+
+                {loadingBusinesses ? (
+                  <View style={s.skeletonWrap}>
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <View key={i} style={s.skeletonRow}>
+                        <View style={s.skeletonLeft}>
+                          <SkeletonBlock style={s.skeletonBadge} />
+                          <SkeletonBlock style={s.skeletonAvatar} />
+                          <View style={s.skeletonIdentity}>
+                            <SkeletonBlock style={s.skeletonName} />
+                            <SkeletonBlock style={s.skeletonSub} />
+                          </View>
+                        </View>
+                        <View style={s.skeletonRight}>
+                          <SkeletonBlock style={s.skeletonPill} />
+                          <SkeletonBlock style={s.skeletonTiny} />
+                        </View>
+                      </View>
                     ))}
                   </View>
-                  {sortedBusinesses.length > INITIAL_VISIBLE && (
-                    <Pressable
-                      style={s.expandBtn}
-                      onPress={() => setShowAllBusinesses(v => !v)}
-                    >
-                      {showAllBusinesses && <Ionicons name="chevron-up" size={15} color="#fff" />}
-                      <Text style={s.expandText}>
-                        {showAllBusinesses ? 'Show Less' : 'View Full Leaderboard'}
-                      </Text>
-                      {!showAllBusinesses && <Ionicons name="chevron-down" size={15} color="#fff" />}
-                    </Pressable>
-                  )}
-                </>
-              )}
-            </>
-          )}
-        </View>
+                ) : sortedBusinesses.length === 0 ? (
+                  <View style={s.emptyWrap}>
+                    <View style={s.emptyIcon}>
+                      <Ionicons name="storefront-outline" size={36} color={CHARCOAL_70} />
+                    </View>
+                    <Text style={s.emptyText}>No businesses yet.</Text>
+                  </View>
+                ) : (
+                  <>
+                    <BusinessPodium businesses={sortedBusinesses} />
+                    <View style={s.list}>
+                      {visibleBusinesses.map((b, i) => (
+                        <BusinessRow key={b.id} business={b} rank={i + 1} />
+                      ))}
+                    </View>
+                    {sortedBusinesses.length > INITIAL_VISIBLE && (
+                      <Pressable
+                        style={s.expandBtn}
+                        onPress={() => setShowAllBusinesses(v => !v)}
+                      >
+                        {showAllBusinesses && <Ionicons name="chevron-up" size={15} color="#fff" />}
+                        <Text style={s.expandText}>
+                          {showAllBusinesses ? 'Show Less' : 'View Full Leaderboard'}
+                        </Text>
+                        {!showAllBusinesses && <Ionicons name="chevron-down" size={15} color="#fff" />}
+                      </Pressable>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </View>
+        </TransitionItem>
 
         {/* Badge section — coral/navbar-bg background matching web */}
-        <View style={s.badgeSection}>
-          <Text style={s.badgeSectionTitle}>What Do Your Badges Mean?</Text>
-          <Text style={s.badgeSectionSub}>Learn about all the badges you can earn</Text>
-          <View style={s.badgeBtns}>
-            <Pressable
-              style={s.badgePrimaryBtn}
-              onPress={() => router.push(routes.badges() as never)}
-            >
-              <Ionicons name="ribbon-outline" size={14} color={CORAL} />
-              <Text style={s.badgePrimaryText}>View badge guide</Text>
-            </Pressable>
-            <Pressable
-              style={s.badgeSecondaryBtn}
-              onPress={() => router.push(routes.achievements() as never)}
-            >
-              <Ionicons name="trophy-outline" size={14} color="#fff" />
-              <Text style={s.badgeSecondaryText}>Achievements</Text>
-            </Pressable>
+        <TransitionItem variant="cta" index={3}>
+          <View style={s.badgeSection}>
+            <Text style={s.badgeSectionTitle}>What Do Your Badges Mean?</Text>
+            <Text style={s.badgeSectionSub}>Learn about all the badges you can earn</Text>
+            <View style={s.badgeBtns}>
+              <Pressable
+                style={s.badgePrimaryBtn}
+                onPress={() => router.push(routes.badges() as never)}
+              >
+                <Ionicons name="ribbon-outline" size={14} color={CORAL} />
+                <Text style={s.badgePrimaryText}>View badge guide</Text>
+              </Pressable>
+              <Pressable
+                style={s.badgeSecondaryBtn}
+                onPress={() => router.push(routes.achievements() as never)}
+              >
+                <Ionicons name="trophy-outline" size={14} color="#fff" />
+                <Text style={s.badgeSecondaryText}>Achievements</Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
+        </TransitionItem>
       </ScrollView>
 
-      {/* Scroll-to-top FAB */}
-      <Animated.View
-        style={[
-          s.fab,
-          {
-            opacity: fabAnim,
-            transform: [{ scale: fabAnim.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) }],
-          },
-        ]}
-        pointerEvents={showScrollTop ? 'box-none' : 'none'}
-      >
-        <Pressable
-          style={({ pressed }) => [s.fabBtn, pressed && s.fabBtnPressed]}
-          onPress={handleScrollToTop}
-          accessibilityRole="button"
-          accessibilityLabel="Scroll to top"
-        >
-          <Ionicons name="chevron-up" size={20} color="#2D3748" />
-        </Pressable>
-      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -381,8 +410,8 @@ const s = StyleSheet.create({
   },
   stickyHeader: {
     paddingHorizontal: businessDetailSpacing.pageGutter,
-    paddingTop: 10,
-    paddingBottom: 8,
+    paddingTop: 14,
+    paddingBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 8,
@@ -528,9 +557,63 @@ const s = StyleSheet.create({
     paddingVertical: 8,
   },
   skeletonRow: {
-    height: 72,
+    minHeight: 72,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.20)',
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  skeletonLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+    minWidth: 0,
+  },
+  skeletonBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+  },
+  skeletonAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+  },
+  skeletonIdentity: {
+    flex: 1,
+    minWidth: 0,
+    gap: 6,
+  },
+  skeletonName: {
+    width: '62%',
+    height: 13,
+    borderRadius: 7,
+  },
+  skeletonSub: {
+    width: '38%',
+    height: 10,
+    borderRadius: 6,
+  },
+  skeletonRight: {
+    alignItems: 'flex-end',
+    gap: 6,
+    marginLeft: 8,
+  },
+  skeletonPill: {
+    width: 58,
+    height: 20,
+    borderRadius: 999,
+  },
+  skeletonTiny: {
+    width: 52,
+    height: 10,
+    borderRadius: 6,
   },
   emptyWrap: {
     alignItems: 'center',
@@ -627,30 +710,5 @@ const s = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#fff',
-  },
-
-  // FAB
-  fab: {
-    position: 'absolute',
-    right: 16,
-    bottom: 32,
-    zIndex: 100,
-  },
-  fabBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 999,
-    backgroundColor: 'rgba(229,224,229,0.90)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  fabBtnPressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.95 }],
   },
 });

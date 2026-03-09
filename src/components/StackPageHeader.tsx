@@ -9,9 +9,10 @@ import { routes } from '../navigation/routes';
 type Props = {
   navigation: { canGoBack: () => boolean; goBack: () => void };
   options?: { headerStyle?: StyleProp<{ backgroundColor?: string }>; headerTintColor?: string };
+  onPressBack?: () => void;
 };
 
-export function StackPageHeader({ navigation, options }: Props) {
+export function StackPageHeader({ navigation, options, onPressBack }: Props) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const bgColor = (options?.headerStyle ? StyleSheet.flatten(options.headerStyle) : undefined)?.backgroundColor ?? businessDetailColors.page;
@@ -29,9 +30,15 @@ export function StackPageHeader({ navigation, options }: Props) {
   );
 
   return (
-    <View style={[styles.wrap, { paddingTop: insets.top + 10, backgroundColor: bgColor }]}>
+    <View style={[styles.wrap, { paddingTop: insets.top + 14, backgroundColor: bgColor }]}>
       <BusinessPageHeader
-        onPressBack={() => { if (navigation.canGoBack()) navigation.goBack(); }}
+        onPressBack={() => {
+          if (onPressBack) {
+            onPressBack();
+            return;
+          }
+          if (navigation.canGoBack()) navigation.goBack();
+        }}
         onPressNotifications={() => router.push('/(stack)/notifications')}
         onPressMessages={() => router.push('/(stack)/dm')}
         menuItems={menuItems}
@@ -45,7 +52,7 @@ const styles = StyleSheet.create({
   wrap: {
     backgroundColor: businessDetailColors.page,
     paddingHorizontal: businessDetailSpacing.pageGutter,
-    paddingBottom: 8,
+    paddingBottom: 12,
     zIndex: 50,
   },
 });

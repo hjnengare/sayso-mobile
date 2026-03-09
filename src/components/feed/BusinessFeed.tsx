@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  Animated,
   FlatList,
-  Pressable,
   RefreshControl,
   StyleSheet,
   View,
@@ -10,15 +8,16 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { BusinessListItemDto, PaginatedBusinessFeedResponseDto } from '@sayso/contracts';
 import { BusinessCard } from '../BusinessCard';
+import { ScrollToTopFab } from '../ScrollToTopFab';
 import { EmptyState } from '../EmptyState';
 import { Text } from '../Typography';
 import { FeedFooter } from './FeedFooter';
 import { LoadMoreButton } from './LoadMoreButton';
 import { SkeletonBusinessCard } from './SkeletonBusinessCard';
+import { TransitionItem } from '../motion/TransitionItem';
 
 const DEFAULT_VISIBLE_CHUNK_SIZE = 12;
 const BACK_TO_TOP_THRESHOLD = 900;
@@ -35,6 +34,7 @@ type Props = {
   queryKey: readonly unknown[];
   subtitle?: string;
   listHeaderTop?: ReactNode;
+  horizontalPadding?: number;
   onScrollY?: (y: number) => void;
   errorTitle: string;
   emptyTitle: string;
@@ -49,6 +49,7 @@ export function BusinessFeed({
   queryKey,
   subtitle,
   listHeaderTop,
+  horizontalPadding = 16,
   onScrollY,
   errorTitle,
   emptyTitle,
@@ -63,17 +64,6 @@ export function BusinessFeed({
   const [showBackToTop, setShowBackToTop] = useState(initialOffset > BACK_TO_TOP_THRESHOLD);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(visibleChunkSize);
-  const fabAnim = useRef(new Animated.Value(initialOffset > BACK_TO_TOP_THRESHOLD ? 1 : 0)).current;
-
-  useEffect(() => {
-    Animated.spring(fabAnim, {
-      toValue: showBackToTop ? 1 : 0,
-      damping: 18,
-      stiffness: 260,
-      useNativeDriver: true,
-    }).start();
-  }, [showBackToTop, fabAnim]);
-
   const query = useInfiniteQuery({
     queryKey: [...queryKey, requestLimit],
     initialPageParam: null as string | null,
@@ -115,8 +105,12 @@ export function BusinessFeed({
   const keyExtractor = useCallback((item: BusinessListItemDto) => item.id, []);
 
   const renderItem = useCallback<ListRenderItem<BusinessListItemDto>>(
-    ({ item }) => <BusinessCard business={item} />,
-    []
+    ({ item, index }) => (
+      <TransitionItem variant="listItem" index={index + 1} animate={index < visibleChunkSize}>
+        <BusinessCard business={item} />
+      </TransitionItem>
+    ),
+    [visibleChunkSize]
   );
 
   const handleRefresh = useCallback(() => {
@@ -189,10 +183,12 @@ export function BusinessFeed({
   }, [handleLoadMore, hasBufferedItems, hasNextPage, loadMoreError, query.isFetchingNextPage, visibleItems.length]);
 
   const listHeader = (listHeaderTop || subtitle) ? (
-    <View style={styles.header}>
-      {listHeaderTop ?? null}
-      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-    </View>
+    <TransitionItem variant="header" index={0}>
+      <View style={styles.header}>
+        {listHeaderTop ?? null}
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      </View>
+    </TransitionItem>
   ) : null;
 
   const listEmpty = query.isLoading ? (
@@ -218,7 +214,7 @@ export function BusinessFeed({
         ListHeaderComponent={listHeader}
         ListEmptyComponent={listEmpty}
         ListFooterComponent={footer}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingHorizontal: horizontalPadding }]}
         refreshControl={
           <RefreshControl
             refreshing={query.isRefetching && !query.isFetchingNextPage}
@@ -230,29 +226,11 @@ export function BusinessFeed({
         removeClippedSubviews
         maxToRenderPerBatch={10}
         onScroll={handleScroll}
-        scrollEventThrottle={16}
+        scrollEventThrottle={32}
         showsVerticalScrollIndicator={false}
       />
 
-      <Animated.View
-        style={[
-          styles.scrollTopFab,
-          {
-            opacity: fabAnim,
-            transform: [{ scale: fabAnim.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) }],
-          },
-        ]}
-        pointerEvents={showBackToTop ? 'box-none' : 'none'}
-      >
-        <Pressable
-          style={({ pressed }) => [styles.scrollTopBtn, pressed && styles.scrollTopBtnPressed]}
-          onPress={handleBackToTop}
-          accessibilityRole="button"
-          accessibilityLabel="Scroll to top"
-        >
-          <Ionicons name="chevron-up" size={20} color="#2D3748" />
-        </Pressable>
-      </Animated.View>
+      <ScrollToTopFab visible={showBackToTop} onPress={handleBackToTop} />
     </View>
   );
 }
@@ -263,7 +241,6 @@ const styles = StyleSheet.create({
   },
   list: {
     flexGrow: 1,
-    paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 16,
   },
@@ -297,28 +274,5 @@ const styles = StyleSheet.create({
   },
   footerSpacer: {
     height: 12,
-  },
-  scrollTopFab: {
-    position: 'absolute',
-    right: 16,
-    bottom: 32,
-    zIndex: 100,
-  },
-  scrollTopBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 999,
-    backgroundColor: 'rgba(229,224,229,0.90)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  scrollTopBtnPressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.95 }],
   },
 });

@@ -30,7 +30,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="search/index"
+        name="leaderboard/index"
         options={{
           title: 'Leaderboard',
           href: '/leaderboard',

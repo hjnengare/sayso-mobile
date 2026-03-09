@@ -7,7 +7,7 @@ export function useRecentReviews(limit = 10, enabled = true) {
     queryKey: ['recent-reviews', limit],
     enabled,
     queryFn: () => apiFetch<RecentReviewsResponseDto>(`/api/reviews/recent?limit=${limit}`),
-    staleTime: 30_000,
+    staleTime: 90_000,
   });
 
   return {

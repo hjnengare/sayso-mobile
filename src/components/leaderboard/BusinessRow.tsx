@@ -7,6 +7,8 @@ import { useRouter } from 'expo-router';
 import type { FeaturedBusinessDto } from '@sayso/contracts';
 import { Text } from '../Typography';
 import { routes } from '../../navigation/routes';
+import { fetchBusinessDetail, getBusinessDetailQueryKey } from '../../hooks/useBusinessDetail';
+import { prefetchRouteIntent } from '../../lib/perf/prefetchRouteIntent';
 
 const CHARCOAL = '#2D2D2D';
 const CHARCOAL_60 = 'rgba(45,45,45,0.60)';
@@ -20,12 +22,20 @@ function getBadgeStyle(rank: number): { colors: readonly [string, string]; textC
   return { colors: ['rgba(45,45,45,0.15)', 'rgba(45,45,45,0.10)'], textColor: 'rgba(45,45,45,0.70)' };
 }
 
+function isPlaceholderImage(url: string | undefined | null): boolean {
+  if (!url || typeof url !== 'string') return false;
+  return url.includes('/businessImagePlaceholders/') || url.includes('/png/') || url.endsWith('.png');
+}
+
 function getImage(b: FeaturedBusinessDto): string | null {
   const imgs = (b as any).uploaded_images;
-  if (Array.isArray(imgs) && imgs.length > 0 && imgs[0]) return String(imgs[0]);
+  if (Array.isArray(imgs) && imgs.length > 0) {
+    const first = imgs[0];
+    if (first && typeof first === 'string' && first.trim() !== '' && !isPlaceholderImage(first)) return first;
+  }
   const url = (b as any).image_url;
-  if (url) return String(url);
-  if (b.image) return String(b.image);
+  if (url && typeof url === 'string' && url.trim() !== '' && !isPlaceholderImage(url)) return url;
+  if (b.image && typeof b.image === 'string' && b.image.trim() !== '' && !isPlaceholderImage(b.image)) return String(b.image);
   return null;
 }
 
@@ -57,11 +67,25 @@ export function BusinessRow({ business, rank }: Props) {
   const badge = getBadgeStyle(rank);
   const rating = business.totalRating ?? business.rating ?? 0;
   const reviewCount = business.reviewCount ?? (business as any).reviews ?? 0;
+  const href = routes.businessDetail(business.id);
 
   return (
     <Pressable
       style={s.card}
-      onPress={() => router.push(routes.businessDetail(business.id) as never)}
+      onPressIn={() => {
+        prefetchRouteIntent(`leaderboard-business:${business.id}`, {
+          href,
+          router: router as unknown as { prefetch?: (path: string) => Promise<void> | void },
+          queryKeys: [
+            {
+              queryKey: getBusinessDetailQueryKey(business.id),
+              queryFn: () => fetchBusinessDetail(business.id),
+              staleTime: 120_000,
+            },
+          ],
+        });
+      }}
+      onPress={() => router.push(href as never)}
       accessibilityRole="button"
     >
       <View style={s.left}>

@@ -61,7 +61,7 @@ export function HomeSectionHeader({ title, actionLabel, onPress, delay = 0 }: Pr
             ],
           }}
         >
-          <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.actionButton} onPress={onPress} activeOpacity={0.8}>
             <Text style={styles.action}>{actionLabel}</Text>
           </TouchableOpacity>
         </Animated.View>
@@ -88,5 +88,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: homeTokens.charcoal,
+  },
+  actionButton: {
+    minWidth: 40,
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
   },
 });

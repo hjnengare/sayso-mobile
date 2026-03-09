@@ -1,6 +1,7 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SkeletonBlock } from '../SkeletonBlock';
 import { businessDetailSpacing } from '../business-detail/styles';
+import { CARD_RADIUS } from '../../styles/radii';
 
 export function EventSpecialSkeleton() {
   return (
@@ -52,12 +53,12 @@ const styles = StyleSheet.create({
   cardLarge: {
     width: '100%',
     height: 190,
-    borderRadius: 12,
+    borderRadius: CARD_RADIUS,
   },
   cardMedium: {
     width: '100%',
     height: 160,
-    borderRadius: 12,
+    borderRadius: CARD_RADIUS,
   },
   fullWidth: {
     marginHorizontal: businessDetailSpacing.pageGutter,
@@ -66,6 +67,6 @@ const styles = StyleSheet.create({
   fullCard: {
     width: '100%',
     height: 200,
-    borderRadius: 12,
+    borderRadius: CARD_RADIUS,
   },
 });

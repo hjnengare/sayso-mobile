@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import {
   useFonts,
@@ -9,9 +9,12 @@ import {
 } from '@expo-google-fonts/urbanist';
 import { useFonts as useLocalFonts } from 'expo-font';
 import { Providers } from '../src/providers/Providers';
+import { RootGuard } from '../src/components/RootGuard';
 import { rootStackScreenOptions } from '../src/navigation/screenOptions';
+import { TransitionScopeProvider } from '../src/components/motion/TransitionScope';
 
 export default function RootLayout() {
+  const pathname = usePathname();
   const [urbanistLoaded] = useFonts({
     Urbanist_400Regular,
     Urbanist_500Medium,
@@ -27,13 +30,17 @@ export default function RootLayout() {
   return (
     <Providers>
       <StatusBar style="dark" />
-      <Stack screenOptions={rootStackScreenOptions}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="(stack)" options={{ headerShown: false }} />
-        <Stack.Screen name="(modals)" options={{ headerShown: false }} />
-        <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
-        <Stack.Screen name="role-unsupported" options={{ headerShown: false }} />
-      </Stack>
+      <TransitionScopeProvider routeKey={pathname}>
+        <RootGuard>
+          <Stack screenOptions={rootStackScreenOptions}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="(stack)" options={{ headerShown: false }} />
+            <Stack.Screen name="(modals)" options={{ headerShown: false }} />
+            <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
+            <Stack.Screen name="role-unsupported" options={{ headerShown: false }} />
+          </Stack>
+        </RootGuard>
+      </TransitionScopeProvider>
     </Providers>
   );
 }

@@ -13,6 +13,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import type { FeaturedBusinessDto, RecentReviewDto, TopReviewerDto } from '@sayso/contracts';
 import { CardSurface } from '../../../components/CardSurface';
+import { SkeletonBlock } from '../../../components/SkeletonBlock';
 import { Text } from '../../../components/Typography';
 import { ReviewerCard } from '../../../components/reviewer-card/ReviewerCard';
 import { COMMUNITY_BADGE_MARQUEE_ASSETS } from '../../../lib/communityBadgeMarqueeAssets';
@@ -176,7 +177,7 @@ export function HomeCommunityHighlightsSection({
             <Text style={styles.pillText}>{contributorsHeading}</Text>
           </View>
           {showContributorsAction ? (
-            <TouchableOpacity onPress={onPressContributors} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.subsectionActionButton} onPress={onPressContributors} activeOpacity={0.8}>
               <Text style={styles.subsectionAction}>See More</Text>
             </TouchableOpacity>
           ) : null}
@@ -196,7 +197,17 @@ export function HomeCommunityHighlightsSection({
                 style={{ width: 240 }}
                 contentStyle={{ minHeight: 260, padding: 16 }}
               >
-                <View style={styles.reviewerCardSkeleton} />
+                <View style={styles.reviewerCardSkeleton}>
+                  <SkeletonBlock style={styles.reviewerSkeletonAvatar} />
+                  <SkeletonBlock style={styles.reviewerSkeletonTitle} />
+                  <SkeletonBlock style={styles.reviewerSkeletonSub} />
+                  <SkeletonBlock style={styles.reviewerSkeletonLine} />
+                  <SkeletonBlock style={styles.reviewerSkeletonLineShort} />
+                  <View style={styles.reviewerSkeletonPillRow}>
+                    <SkeletonBlock style={styles.reviewerSkeletonPill} />
+                    <SkeletonBlock style={styles.reviewerSkeletonPill} />
+                  </View>
+                </View>
               </CardSurface>
             ))}
           </ScrollView>
@@ -250,7 +261,7 @@ export function HomeCommunityHighlightsSection({
           <View style={styles.pill}>
             <Text style={styles.pillText}>Featured Businesses</Text>
           </View>
-          <TouchableOpacity onPress={onPressFeatured} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.subsectionActionButton} onPress={onPressFeatured} activeOpacity={0.8}>
             <Text style={styles.subsectionAction}>See More</Text>
           </TouchableOpacity>
         </View>
@@ -271,7 +282,7 @@ export function HomeCommunityHighlightsSection({
 const styles = StyleSheet.create({
   section: {
     paddingTop: 18,
-    paddingBottom: 0,
+    paddingBottom: Platform.OS === 'web' ? 100 : 50,
     backgroundColor: homeTokens.offWhite,
   },
   subsection: {
@@ -304,6 +315,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: homeTokens.charcoal,
   },
+  subsectionActionButton: {
+    minWidth: 40,
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
   row: {
     overflow: 'visible',
     backgroundColor: homeTokens.offWhite,
@@ -318,6 +336,42 @@ const styles = StyleSheet.create({
   reviewerCardSkeleton: {
     flex: 1,
     minHeight: 148,
+    gap: 10,
+  },
+  reviewerSkeletonAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+  },
+  reviewerSkeletonTitle: {
+    width: '72%',
+    height: 14,
+    borderRadius: 7,
+  },
+  reviewerSkeletonSub: {
+    width: '48%',
+    height: 11,
+    borderRadius: 6,
+  },
+  reviewerSkeletonLine: {
+    width: '100%',
+    height: 10,
+    borderRadius: 6,
+  },
+  reviewerSkeletonLineShort: {
+    width: '78%',
+    height: 10,
+    borderRadius: 6,
+  },
+  reviewerSkeletonPillRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  reviewerSkeletonPill: {
+    width: 80,
+    height: 24,
+    borderRadius: 999,
   },
   messageCard: {
     marginHorizontal: homeTokens.pageGutter,

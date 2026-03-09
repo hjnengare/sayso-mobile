@@ -19,16 +19,3 @@ export function calculateDistanceKm(
 
   return earthRadiusKm * c;
 }
-
-export function formatDistanceAway(distanceKm: number) {
-  if (!Number.isFinite(distanceKm) || distanceKm < 0) {
-    return '';
-  }
-
-  if (distanceKm < 1) {
-    const roundedMeters = Math.max(10, Math.round((distanceKm * 1000) / 10) * 10);
-    return `${roundedMeters} m away`;
-  }
-
-  return `${distanceKm.toFixed(1)} km away`;
-}

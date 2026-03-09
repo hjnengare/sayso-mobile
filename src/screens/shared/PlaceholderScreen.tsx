@@ -2,6 +2,7 @@ import { SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 're
 import { Stack, useRouter } from 'expo-router';
 import { Text } from '../../components/Typography';
 import { CARD_CTA_RADIUS, CARD_RADIUS } from '../../styles/radii';
+import { TransitionItem } from '../../components/motion/TransitionItem';
 
 type Action = {
   label: string;
@@ -21,19 +22,22 @@ export function PlaceholderScreen({ title, description, actions = [] }: Props) {
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ title }} />
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.card}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.description}>{description}</Text>
-        </View>
-        {actions.map((action) => (
-          <TouchableOpacity
-            key={`${title}-${action.label}`}
-            style={styles.action}
-            onPress={() => router.push(action.href as never)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.actionLabel}>{action.label}</Text>
-          </TouchableOpacity>
+        <TransitionItem variant="card" index={0}>
+          <View style={styles.card}>
+            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.description}>{description}</Text>
+          </View>
+        </TransitionItem>
+        {actions.map((action, index) => (
+          <TransitionItem key={`${title}-${action.label}`} variant="listItem" index={index + 1}>
+            <TouchableOpacity
+              style={styles.action}
+              onPress={() => router.push(action.href as never)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.actionLabel}>{action.label}</Text>
+            </TouchableOpacity>
+          </TransitionItem>
         ))}
       </ScrollView>
     </SafeAreaView>

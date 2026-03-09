@@ -3,6 +3,7 @@ import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { OnboardingLayout } from '../../components/onboarding/OnboardingLayout';
 import { Text } from '../../components/Typography';
 import { apiFetch } from '../../lib/api';
@@ -11,80 +12,123 @@ import { routes } from '../../navigation/routes';
 const MIN = 1;
 const MAX = 3;
 
-type IoniconName = 'shield-checkmark-outline' | 'time-outline' | 'happy-outline' | 'pricetag-outline';
-
-const DEALBREAKERS: { id: string; label: string; description: string; icon: IoniconName }[] = [
+const DEALBREAKERS = [
   {
     id: 'trustworthiness',
     label: 'Trustworthiness',
-    description: 'Reliable and honest service you can count on',
-    icon: 'shield-checkmark-outline',
+    description: 'Reliable and honest service',
   },
   {
     id: 'punctuality',
     label: 'Punctuality',
     description: 'On-time and respects your schedule',
-    icon: 'time-outline',
   },
   {
     id: 'friendliness',
     label: 'Friendliness',
-    description: 'Welcoming and personable staff',
-    icon: 'happy-outline',
+    description: 'Welcoming and helpful staff',
   },
   {
     id: 'value-for-money',
     label: 'Value for Money',
-    description: 'Great quality at fair prices',
-    icon: 'pricetag-outline',
+    description: 'Fair pricing and good quality',
   },
-];
+] as const;
+
+type DealbreakerId = typeof DEALBREAKERS[number]['id'];
+type DealbreakerIconName = 'shield-checkmark-outline' | 'time-outline' | 'happy-outline' | 'pricetag-outline';
+type PreferenceDto = { id: string };
+type PreferencesResponseDto = { dealbreakers?: PreferenceDto[] };
+
+type CardAnim = {
+  opacity: Animated.Value;
+  y: Animated.Value;
+  scale: Animated.Value;
+};
+
+const DEALBREAKER_ICONS: Record<DealbreakerId, DealbreakerIconName> = {
+  trustworthiness: 'shield-checkmark-outline',
+  punctuality: 'time-outline',
+  friendliness: 'happy-outline',
+  'value-for-money': 'pricetag-outline',
+};
 
 export default function DealBreakersScreen() {
   const router = useRouter();
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<DealbreakerId>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // Counter entrance
-  const counterOpacity = useRef(new Animated.Value(0)).current;
-  const counterY       = useRef(new Animated.Value(14)).current;
-
-  // Per-card entrance — opacity + translateY + scale spring
-  const cardAnims = useRef(
+  const badgeOpacity = useRef(new Animated.Value(0)).current;
+  const badgeY = useRef(new Animated.Value(12)).current;
+  const cardAnims = useRef<CardAnim[]>(
     DEALBREAKERS.map(() => ({
       opacity: new Animated.Value(0),
-      y:       new Animated.Value(20),
-      scale:   new Animated.Value(0.92),
+      y: new Animated.Value(16),
+      scale: new Animated.Value(0.95),
     }))
   ).current;
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function hydrate() {
+      try {
+        const stored = await AsyncStorage.getItem('onboarding_dealbreakers');
+        if (stored) {
+          const ids = JSON.parse(stored) as string[];
+          const valid = ids.filter((id): id is DealbreakerId => DEALBREAKERS.some((item) => item.id === id));
+          if (!cancelled && valid.length > 0) {
+            setSelected(new Set(valid));
+            return;
+          }
+        }
+
+        const preferences = await apiFetch<PreferencesResponseDto>('/api/user/preferences');
+        const ids = (preferences.dealbreakers ?? [])
+          .map((item) => item.id)
+          .filter((id): id is DealbreakerId => DEALBREAKERS.some((dealbreaker) => dealbreaker.id === id));
+
+        if (!cancelled && ids.length > 0) {
+          setSelected(new Set(ids));
+          await AsyncStorage.setItem('onboarding_dealbreakers', JSON.stringify(ids));
+        }
+      } catch {
+        // Ignore hydration errors; screen remains usable.
+      }
+    }
+
+    hydrate();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     const ease = Easing.out(Easing.cubic);
 
-    // Counter at 150ms
     Animated.parallel([
-      Animated.timing(counterOpacity, { toValue: 1, delay: 150, duration: 340, useNativeDriver: true }),
-      Animated.timing(counterY,       { toValue: 0, delay: 150, duration: 340, easing: ease, useNativeDriver: true }),
+      Animated.timing(badgeOpacity, { toValue: 1, delay: 120, duration: 300, useNativeDriver: true }),
+      Animated.timing(badgeY, { toValue: 0, delay: 120, duration: 300, easing: ease, useNativeDriver: true }),
     ]).start();
 
-    // Cards: stagger 80ms apart from 210ms — spring scale for tactile pop
-    DEALBREAKERS.forEach((_, i) => {
-      const delay = 210 + i * 80;
-      const anim = cardAnims[i];
+    DEALBREAKERS.forEach((_, index) => {
+      const delay = 180 + index * 70;
+      const anim = cardAnims[index];
       Animated.parallel([
-        Animated.timing(anim.opacity, { toValue: 1, delay, duration: 340, useNativeDriver: true }),
-        Animated.timing(anim.y,       { toValue: 0, delay, duration: 340, easing: ease, useNativeDriver: true }),
+        Animated.timing(anim.opacity, { toValue: 1, delay, duration: 300, useNativeDriver: true }),
+        Animated.timing(anim.y, { toValue: 0, delay, duration: 300, easing: ease, useNativeDriver: true }),
         Animated.sequence([
           Animated.delay(delay),
-          Animated.spring(anim.scale, { toValue: 1, damping: 12, stiffness: 200, useNativeDriver: true }),
+          Animated.spring(anim.scale, { toValue: 1, damping: 14, stiffness: 220, useNativeDriver: true }),
         ]),
       ]).start();
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [badgeOpacity, badgeY, cardAnims]);
 
-  const toggle = useCallback((id: string) => {
-    setSelected(prev => {
+  const toggle = useCallback((id: DealbreakerId) => {
+    setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
@@ -101,6 +145,7 @@ export default function DealBreakersScreen() {
   const handleContinue = useCallback(async () => {
     if (!canContinue || isLoading) return;
     setIsLoading(true);
+    setError('');
     try {
       const ids = Array.from(selected);
       await apiFetch('/api/onboarding/deal-breakers', {
@@ -108,20 +153,22 @@ export default function DealBreakersScreen() {
         body: JSON.stringify({ dealbreakers: ids }),
       });
       await AsyncStorage.setItem('onboarding_dealbreakers', JSON.stringify(ids));
-      router.push(routes.completeProfile() as never);
-    } catch {
-      const ids = Array.from(selected);
-      await AsyncStorage.setItem('onboarding_dealbreakers', JSON.stringify(ids));
-      router.push(routes.completeProfile() as never);
+      router.replace(routes.completeProfile() as never);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save deal breakers. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  }, [canContinue, isLoading, selected, router]);
+  }, [canContinue, isLoading, router, selected]);
 
   const handleBack = () => router.push(routes.subcategories() as never);
 
-  const selectionLabel =
-    selected.size === 0 ? `Pick up to ${MAX}` : `${selected.size} of ${MAX} selected`;
+  const helperText =
+    selected.size === 0
+      ? 'Select at least one deal-breaker to continue'
+      : selected.size === MAX
+        ? "Perfect! You've selected the maximum"
+        : 'Great! Select more or complete setup';
 
   return (
     <>
@@ -129,67 +176,78 @@ export default function DealBreakersScreen() {
       <OnboardingLayout
         step={3}
         totalSteps={4}
-        title="What are your deal-breakers?"
-        subtitle="Select what matters most to you in a business."
+        title="What are your dealbreakers?"
+        subtitle="Select what matters most to you in a business"
         onBack={handleBack}
         onContinue={handleContinue}
         continueLabel="Complete Setup"
+        continueVariant="complete"
         canContinue={canContinue}
         isLoading={isLoading}
       >
-        {/* Counter */}
-        <Animated.View style={[styles.counterRow, { opacity: counterOpacity, transform: [{ translateY: counterY }] }]}>
-          <Ionicons
-            name={selected.size >= MIN ? 'checkmark-circle' : 'ellipse-outline'}
-            size={16}
-            color={selected.size >= MIN ? '#7D9B76' : 'rgba(45,45,45,0.4)'}
-          />
-          <Text style={[styles.counterTxt, selected.size >= MIN && styles.counterTxtGreen]}>
-            {selectionLabel}
-          </Text>
+        {!!error ? (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+
+        <Animated.View style={[styles.counterWrap, { opacity: badgeOpacity, transform: [{ translateY: badgeY }] }]}>
+          <View style={[styles.counterPill, selected.size > 0 && styles.counterPillReady]}>
+            <Text style={styles.counterText}>
+              {selected.size} of {MAX} selected
+            </Text>
+            {selected.size > 0 ? <Ionicons name="checkmark-circle" size={15} color="#7D9B76" /> : null}
+          </View>
+          <Text style={styles.counterHint}>{helperText}</Text>
         </Animated.View>
 
-        {/* Cards — each springs in */}
-        <View style={styles.cards}>
-          {DEALBREAKERS.map((item, i) => {
+        <View style={styles.grid}>
+          {DEALBREAKERS.map((item, index) => {
             const isSelected = selected.has(item.id);
             const isDisabled = atMax && !isSelected;
-            const anim = cardAnims[i];
+            const anim = cardAnims[index];
             return (
               <Animated.View
                 key={item.id}
-                style={{ opacity: anim.opacity, transform: [{ translateY: anim.y }, { scale: anim.scale }] }}
+                style={{
+                  width: '48.5%',
+                  opacity: anim.opacity,
+                  transform: [{ translateY: anim.y }, { scale: anim.scale }],
+                }}
               >
                 <Pressable
                   style={({ pressed }) => [
                     styles.card,
-                    isSelected && styles.cardSelected,
                     isDisabled && styles.cardDisabled,
                     pressed && !isDisabled && styles.cardPressed,
                   ]}
                   onPress={() => toggle(item.id)}
                   disabled={isDisabled}
                 >
-                  <View style={[styles.iconWrap, isSelected && styles.iconWrapSelected]}>
-                    <Ionicons
-                      name={item.icon}
-                      size={26}
-                      color={isSelected ? '#FFFFFF' : '#722F37'}
-                    />
-                  </View>
-                  <View style={styles.cardText}>
-                    <Text style={[styles.cardLabel, isSelected && styles.cardLabelSelected]}>
-                      {item.label}
-                    </Text>
-                    <Text style={[styles.cardDesc, isSelected && styles.cardDescSelected]}>
-                      {item.description}
-                    </Text>
-                  </View>
-                  {isSelected && (
-                    <View style={styles.checkBadge}>
-                      <Ionicons name="checkmark" size={14} color="#7D9B76" />
-                    </View>
-                  )}
+                  <LinearGradient
+                    colors={isSelected ? ['#722F37', '#7A404A'] : ['rgba(125,155,118,0.14)', 'rgba(125,155,118,0.06)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[styles.cardFill, isSelected && styles.cardSelected]}
+                  >
+                    {isSelected ? (
+                      <>
+                        <View style={styles.selectedIconWrap}>
+                          <Ionicons name={DEALBREAKER_ICONS[item.id]} size={28} color="#FFFFFF" />
+                        </View>
+                        <View style={styles.selectedCheck}>
+                          <Ionicons name="checkmark-circle" size={15} color="#722F37" />
+                        </View>
+                      </>
+                    ) : (
+                      <>
+                        <Text style={styles.cardLabel}>{item.label}</Text>
+                        <Text style={styles.cardDescription}>
+                          {item.description}
+                        </Text>
+                      </>
+                    )}
+                  </LinearGradient>
                 </Pressable>
               </Animated.View>
             );
@@ -201,45 +259,101 @@ export default function DealBreakersScreen() {
 }
 
 const styles = StyleSheet.create({
-  counterRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 20 },
-  counterTxt: { fontSize: 13, fontWeight: '600', color: 'rgba(45,45,45,0.45)' },
-  counterTxtGreen: { color: '#7D9B76' },
+  errorBanner: {
+    backgroundColor: 'rgba(255, 247, 237, 0.95)',
+    borderColor: 'rgba(251, 146, 60, 0.35)',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 14,
+  },
+  errorText: {
+    color: '#C2410C',
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
 
-  cards: { gap: 12 },
+  counterWrap: { alignItems: 'center', marginBottom: 16 },
+  counterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(154,176,154,0.24)',
+    backgroundColor: 'rgba(154,176,154,0.10)',
+    borderRadius: 999,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+  },
+  counterPillReady: {
+    borderColor: 'rgba(125,155,118,0.34)',
+    backgroundColor: 'rgba(157,171,155,0.16)',
+  },
+  counterText: { color: '#7D9B76', fontSize: 14, fontWeight: '600' },
+  counterHint: {
+    marginTop: 7,
+    fontSize: 13,
+    lineHeight: 18,
+    color: 'rgba(66,66,72,0.65)',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
 
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
   card: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: 'rgba(255,255,255,0.8)',
-    borderRadius: 16, padding: 16,
-    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+    minHeight: 132,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: 'rgba(154,176,154,0.32)',
+    overflow: 'hidden',
+  },
+  cardFill: {
+    minHeight: 128,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
     position: 'relative',
   },
   cardSelected: {
-    backgroundColor: 'rgba(125,155,118,0.15)', borderColor: '#7D9B76',
-    shadowColor: '#7D9B76', shadowOpacity: 0.2, shadowRadius: 10,
+    borderWidth: 2,
+    borderColor: '#722F37',
   },
-  cardDisabled: { opacity: 0.38 },
+  cardDisabled: { opacity: 0.42 },
   cardPressed: { transform: [{ scale: 0.98 }] },
-
-  iconWrap: {
-    width: 52, height: 52, borderRadius: 14,
-    backgroundColor: 'rgba(114,47,55,0.10)',
-    alignItems: 'center', justifyContent: 'center',
+  cardLabel: {
+    textAlign: 'center',
+    color: '#2D2D2D',
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: '700',
+    marginBottom: 8,
   },
-  iconWrapSelected: { backgroundColor: '#7D9B76' },
-
-  cardText: { flex: 1 },
-  cardLabel: { fontSize: 15, fontWeight: '700', color: '#2D2D2D', marginBottom: 3 },
-  cardLabelSelected: { color: '#3a6b35' },
-  cardDesc: { fontSize: 13, lineHeight: 18, color: 'rgba(45,45,45,0.60)', fontWeight: '400' },
-  cardDescSelected: { color: 'rgba(45,45,45,0.70)' },
-
-  checkBadge: {
-    position: 'absolute', top: 12, right: 12,
-    width: 22, height: 22, borderRadius: 999,
-    backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1.5, borderColor: '#7D9B76',
+  cardDescription: {
+    textAlign: 'center',
+    color: 'rgba(66,66,72,0.66)',
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '600',
+  },
+  selectedIconWrap: {
+    width: 62,
+    height: 62,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  selectedCheck: {
+    width: 24,
+    height: 24,
+    borderRadius: 999,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

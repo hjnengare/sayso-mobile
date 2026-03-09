@@ -8,7 +8,7 @@ export default function BusinessReviewsRoute() {
 
   useEffect(() => {
     if (!id) return;
-    router.replace(routes.businessReviewForm(id) as never);
+    router.replace(routes.writeReview('business', id) as never);
   }, [id, router]);
 
   return null;

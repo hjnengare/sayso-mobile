@@ -1,6 +1,7 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import { AuthProvider } from './AuthProvider';
+import { ProfileProvider } from './ProfileProvider';
 import { NotificationsProvider } from './NotificationsProvider';
 import { SecurityProvider } from './SecurityProvider';
 import { ScrollToTopProvider } from './ScrollToTopProvider';
@@ -10,9 +11,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <SecurityProvider>
         <AuthProvider>
-          <NotificationsProvider>
-            <ScrollToTopProvider>{children}</ScrollToTopProvider>
-          </NotificationsProvider>
+          <ProfileProvider>
+            <NotificationsProvider>
+              <ScrollToTopProvider>{children}</ScrollToTopProvider>
+            </NotificationsProvider>
+          </ProfileProvider>
         </AuthProvider>
       </SecurityProvider>
     </QueryClientProvider>

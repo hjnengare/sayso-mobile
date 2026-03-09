@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import type { TopReviewerDto } from '@sayso/contracts';
 import { Text } from '../Typography';
 import { routes } from '../../navigation/routes';
+import { prefetchRouteIntent } from '../../lib/perf/prefetchRouteIntent';
 
 const CHARCOAL = '#2D2D2D';
 const CHARCOAL_60 = 'rgba(45,45,45,0.60)';
@@ -21,9 +22,8 @@ function getBadgeStyle(rank: number): { colors: readonly [string, string]; textC
   return { colors: ['rgba(45,45,45,0.15)', 'rgba(45,45,45,0.10)'], textColor: 'rgba(45,45,45,0.70)' }; // neutral
 }
 
-function Avatar({ src, name }: { src?: string; name: string }) {
+function Avatar({ src }: { src?: string }) {
   const [err, setErr] = useState(false);
-  const initial = (name[0] ?? 'U').toUpperCase();
 
   if (src && !err) {
     return (
@@ -36,9 +36,14 @@ function Avatar({ src, name }: { src?: string; name: string }) {
     );
   }
   return (
-    <View style={[s.avatar, s.avatarFallback]}>
-      <Text style={s.avatarInitial}>{initial}</Text>
-    </View>
+    <LinearGradient
+      colors={['rgba(157,171,155,0.10)', 'rgba(114,47,55,0.10)']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[s.avatar, s.avatarFallback]}
+    >
+      <Ionicons name="person" size={20} color="rgba(45,45,45,0.60)" />
+    </LinearGradient>
   );
 }
 
@@ -48,11 +53,18 @@ export function ContributorRow({ reviewer, rank }: Props) {
   const router = useRouter();
   const badge = getBadgeStyle(rank);
   const rating = reviewer.avgRatingGiven;
+  const href = routes.reviewer(reviewer.id);
 
   return (
     <Pressable
       style={s.card}
-      onPress={() => router.push(routes.reviewer(reviewer.id) as never)}
+      onPressIn={() => {
+        prefetchRouteIntent(`leaderboard-reviewer:${reviewer.id}`, {
+          href,
+          router: router as unknown as { prefetch?: (path: string) => Promise<void> | void },
+        });
+      }}
+      onPress={() => router.push(href as never)}
       accessibilityRole="button"
     >
       <View style={s.left}>
@@ -68,7 +80,7 @@ export function ContributorRow({ reviewer, rank }: Props) {
           }
         </LinearGradient>
 
-        <Avatar src={reviewer.profilePicture} name={reviewer.name} />
+        <Avatar src={reviewer.profilePicture} />
 
         <View style={s.identity}>
           <Text style={s.name} numberOfLines={1}>@{reviewer.username ?? reviewer.name}</Text>
@@ -140,14 +152,8 @@ const s = StyleSheet.create({
     flexShrink: 0,
   },
   avatarFallback: {
-    backgroundColor: 'rgba(157,171,155,0.30)',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  avatarInitial: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#9DAB9B',
   },
   identity: {
     flex: 1,

@@ -7,7 +7,7 @@ export function useTopReviewers(limit = 12, enabled = true) {
     queryKey: ['top-reviewers', limit],
     enabled,
     queryFn: () => apiFetch<TopReviewersResponseDto>(`/api/reviewers/top?limit=${limit}`),
-    staleTime: 60_000,
+    staleTime: 120_000,
   });
 
   return {

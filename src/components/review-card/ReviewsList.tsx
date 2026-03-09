@@ -1,13 +1,20 @@
+import { useEffect, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ReviewCard, type ReviewCardData } from './ReviewCard';
 import { Text } from '../Typography';
+import { supabase } from '../../lib/supabase';
 
 interface ReviewsListProps {
   reviews: ReviewCardData[];
   loading?: boolean;
   error?: string | null;
   emptyMessage?: string;
+  realtimeTarget?: {
+    type: 'business' | 'event';
+    id: string;
+  };
+  onUpdate?: () => void;
   emptyStateAction?: {
     label: string;
     onPress: () => void;
@@ -64,8 +71,69 @@ export function ReviewsList({
   loading = false,
   error = null,
   emptyMessage = 'No reviews yet. Be the first to share your experience!',
+  realtimeTarget,
+  onUpdate,
   emptyStateAction,
 }: ReviewsListProps) {
+  const reviewIdSet = useMemo(() => new Set(reviews.map((review) => review.id)), [reviews]);
+  const helpfulRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!realtimeTarget?.id || !onUpdate) return;
+
+    const reviewFilterColumn = realtimeTarget.type === 'event' ? 'event_id' : 'business_id';
+    const reviewsChannel = supabase
+      .channel(`mobile-reviews-${realtimeTarget.type}-${realtimeTarget.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reviews',
+          filter: `${reviewFilterColumn}=eq.${realtimeTarget.id}`,
+        },
+        () => {
+          onUpdate();
+        }
+      )
+      .subscribe();
+
+    const helpfulVotesChannel = supabase
+      .channel(`mobile-review-helpful-${realtimeTarget.type}-${realtimeTarget.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'review_helpful_votes',
+        },
+        (payload) => {
+          const candidateId =
+            (payload.new as { review_id?: string } | null)?.review_id ??
+            (payload.old as { review_id?: string } | null)?.review_id;
+          if (!candidateId || !reviewIdSet.has(candidateId)) return;
+
+          if (helpfulRefreshTimerRef.current) {
+            clearTimeout(helpfulRefreshTimerRef.current);
+          }
+          helpfulRefreshTimerRef.current = setTimeout(() => {
+            onUpdate();
+            helpfulRefreshTimerRef.current = null;
+          }, 300);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      if (helpfulRefreshTimerRef.current) {
+        clearTimeout(helpfulRefreshTimerRef.current);
+        helpfulRefreshTimerRef.current = null;
+      }
+      supabase.removeChannel(reviewsChannel);
+      supabase.removeChannel(helpfulVotesChannel);
+    };
+  }, [onUpdate, realtimeTarget?.id, realtimeTarget?.type, reviewIdSet]);
+
   if (loading) {
     return (
       <View style={styles.stack}>

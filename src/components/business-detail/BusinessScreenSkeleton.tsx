@@ -84,8 +84,8 @@ export function BusinessScreenSkeleton() {
 const styles = StyleSheet.create({
   stickyHeader: {
     paddingHorizontal: businessDetailSpacing.pageGutter,
-    paddingTop: 10,
-    paddingBottom: 8,
+    paddingTop: 14,
+    paddingBottom: 12,
     backgroundColor: businessDetailColors.coral,
   },
   headerRow: {
@@ -98,8 +98,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   headerButton: {
-    width: 34,
-    height: 34,
+    width: 40,
+    height: 40,
     borderRadius: 999,
     backgroundColor: 'rgba(255,255,255,0.24)',
   },
@@ -124,8 +124,8 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: businessDetailSpacing.cardRadius,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.22)',
-    backgroundColor: 'rgba(157,171,155,0.34)',
+    borderColor: 'rgba(255,255,255,0.34)',
+    backgroundColor: 'rgba(157,171,155,0.32)',
     padding: 14,
     gap: 10,
   },

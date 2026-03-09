@@ -13,6 +13,7 @@ type CardSurfaceProps = {
   material?: 'solid' | 'frosted';
   interactive?: boolean;
   onPress?: () => void;
+  onPressIn?: () => void;
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
   children: ReactNode;
@@ -48,6 +49,7 @@ export function CardSurface({
   material = 'solid',
   interactive = false,
   onPress,
+  onPressIn,
   style,
   contentStyle,
   children,
@@ -68,6 +70,7 @@ export function CardSurface({
     <Pressable
       testID={testID}
       onPress={onPress}
+      onPressIn={onPressIn}
       style={({ pressed }) => [
         styles.shell,
         style,

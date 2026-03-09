@@ -13,7 +13,7 @@ export default function DMInboxRoute() {
           ? 'The direct message inbox route is wired into the profile stack. Thread detail routing is already available at /dm/[threadId].'
           : 'Messages requires authentication. The route exists now so the mobile navigation tree is stable for future messaging work.'
       }
-      actions={user ? [{ label: 'Open sample thread', href: routes.dmThread('sample-thread') }] : [{ label: 'Sign in', href: routes.login() }]}
+      actions={user ? [{ label: 'Open sample thread', href: routes.dmThread('sample-thread') }] : [{ label: 'Sign in', href: routes.onboarding() }]}
     />
   );
 }

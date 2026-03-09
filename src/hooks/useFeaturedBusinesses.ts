@@ -55,7 +55,7 @@ export function useFeaturedBusinesses(limit = 12, region: string | null = null, 
       if (Array.isArray(payload)) return payload;
       return payload.data ?? payload.businesses ?? [];
     },
-    staleTime: 60_000,
+    staleTime: 120_000,
   });
 
   const error = query.error as (Error & { statusCode?: number; status?: number }) | null;

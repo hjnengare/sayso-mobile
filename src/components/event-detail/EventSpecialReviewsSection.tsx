@@ -7,17 +7,21 @@ import { businessDetailColors, businessDetailSpacing } from '../business-detail/
 
 type Props = {
   title?: string;
+  targetId: string;
   reviews: EventReviewItem[];
   isLoading?: boolean;
   error?: string | null;
+  onRefresh?: () => void;
   onPressWriteReview: () => void;
 };
 
 export function EventSpecialReviewsSection({
   title = 'Community Reviews',
+  targetId,
   reviews,
   isLoading = false,
   error,
+  onRefresh,
   onPressWriteReview,
 }: Props) {
   const isSpecial = title?.toLowerCase().includes('special');
@@ -49,6 +53,8 @@ export function EventSpecialReviewsSection({
         loading={isLoading}
         error={error}
         emptyMessage={emptyMessage}
+        realtimeTarget={{ type: 'event', id: targetId }}
+        onUpdate={onRefresh}
         emptyStateAction={{ label: 'Write First Review', onPress: onPressWriteReview }}
       />
 

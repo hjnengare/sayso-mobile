@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { EventSpecialListItemDto } from '@sayso/contracts';
@@ -11,6 +11,12 @@ import { EventCountdownBadge } from './event-card/EventCountdownBadge';
 import { EventDateRibbon } from './event-card/EventDateRibbon';
 import { EventRatingBadge } from './event-card/EventRatingBadge';
 import { EventStatusPills } from './event-card/EventStatusPills';
+import {
+  fetchEventSpecialDetail,
+  getEventSpecialDetailQueryKey,
+} from '../hooks/useEventSpecialDetail';
+import { markRouteTransitionStart } from '../lib/perf/perfMarkers';
+import { prefetchRouteIntent } from '../lib/perf/prefetchRouteIntent';
 import {
   getDateRibbonLabel,
   getEventCountdownState,
@@ -30,6 +36,7 @@ const ctaShadowStyle = getOverlayShadowStyle(CARD_CTA_RADIUS);
 
 function EventCardComponent({ item, style }: Props) {
   const router = useRouter();
+  const href = useMemo(() => getEventDetailHref(item), [item]);
   const { image, isFallbackArtwork } = resolveEventMediaImage(item);
   const { hasRating, displayRating, reviews } = normalizeEventRating(item);
   const [countdown, setCountdown] = useState<EventCountdownState>(() => getEventCountdownState(item));
@@ -46,13 +53,33 @@ function EventCardComponent({ item, style }: Props) {
     return () => clearInterval(intervalId);
   }, [item]);
 
+  const handlePressIn = useCallback(() => {
+    prefetchRouteIntent(`event-special:${item.id}`, {
+      href,
+      router: router as unknown as { prefetch?: (path: string) => Promise<void> | void },
+      queryKeys: [
+        {
+          queryKey: getEventSpecialDetailQueryKey(item.id),
+          queryFn: () => fetchEventSpecialDetail(item.id),
+          staleTime: 120_000,
+        },
+      ],
+    });
+  }, [href, item.id, router]);
+
+  const handleNavigate = useCallback(() => {
+    markRouteTransitionStart(`event-special:${item.id}`);
+    router.push(href as never);
+  }, [href, item.id, router]);
+
   return (
     <CardSurface
       radius={CARD_RADIUS}
       material="frosted"
       style={style}
       interactive
-      onPress={() => router.push(getEventDetailHref(item) as never)}
+      onPress={handleNavigate}
+      onPressIn={handlePressIn}
     >
       <View style={styles.media}>
         <EventCardImage imageUri={image} isFallbackArtwork={isFallbackArtwork} />

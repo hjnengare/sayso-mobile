@@ -11,7 +11,7 @@ type Props = {
 };
 
 export function BusinessReviewsSection({ businessId, onPressWriteReview }: Props) {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, error } =
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, error, refetch } =
     useBusinessReviews(businessId);
   const reviews = data?.pages.flatMap((page) => page.data) ?? [];
 
@@ -39,6 +39,10 @@ export function BusinessReviewsSection({ businessId, onPressWriteReview }: Props
         loading={isLoading}
         error={isError ? (error instanceof Error ? error.message : 'Failed to load reviews') : null}
         emptyMessage="No reviews yet. Be the first to review this business!"
+        realtimeTarget={{ type: 'business', id: businessId }}
+        onUpdate={() => {
+          void refetch();
+        }}
         emptyStateAction={{ label: 'Write First Review', onPress: onPressWriteReview }}
       />
 

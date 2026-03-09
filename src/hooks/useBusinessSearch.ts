@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api';
 import type { BusinessListItemDto } from '@sayso/contracts';
 
@@ -34,6 +34,7 @@ export function useBusinessSearch({ query, minRating, radiusKm, lat, lng, limit 
     queryFn: () => apiFetch<SearchResponse>(`/api/businesses?${params.toString()}`),
     select: (r) => r.businesses ?? r.data ?? [],
     enabled: normalized.length >= 1,
-    staleTime: 10_000,
+    placeholderData: keepPreviousData,
+    staleTime: 20_000,
   });
 }

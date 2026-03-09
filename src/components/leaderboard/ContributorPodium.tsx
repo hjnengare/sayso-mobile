@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import type { TopReviewerDto } from '@sayso/contracts';
 import { Text } from '../Typography';
+import { routes } from '../../navigation/routes';
+import { prefetchRouteIntent } from '../../lib/perf/prefetchRouteIntent';
 
 const CHARCOAL = '#2D2D2D';
 const CHARCOAL_60 = 'rgba(45,45,45,0.60)';
@@ -27,9 +30,8 @@ const AVATAR_SZ: Record<1 | 2 | 3, number> = { 1: 72, 2: 56, 3: 56 };
 const BADGE_SZ: Record<1 | 2 | 3, number> = { 1: 30, 2: 24, 3: 24 };
 const PILLAR_H: Record<1 | 2 | 3, number> = { 1: 72, 2: 48, 3: 36 };
 
-function Avatar({ src, name, size }: { src?: string; name: string; size: number }) {
+function Avatar({ src, size }: { src?: string; size: number }) {
   const [err, setErr] = useState(false);
-  const initial = (name[0] ?? 'U').toUpperCase();
 
   if (src && !err) {
     return (
@@ -42,26 +44,43 @@ function Avatar({ src, name, size }: { src?: string; name: string; size: number 
     );
   }
   return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: 'rgba(157,171,155,0.30)', alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: '#fff' }}>
-      <Text style={{ fontSize: size * 0.38, fontWeight: '700', color: '#9DAB9B' }}>{initial}</Text>
-    </View>
+    <LinearGradient
+      colors={['rgba(157,171,155,0.10)', 'rgba(114,47,55,0.10)']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center', borderWidth: 2.5, borderColor: '#fff' }}
+    >
+      <Ionicons name="person" size={size * 0.45} color="rgba(45,45,45,0.60)" />
+    </LinearGradient>
   );
 }
 
 function PodiumItem({ reviewer, rank }: { reviewer: TopReviewerDto; rank: 1 | 2 | 3 }) {
+  const router = useRouter();
   const avSz = AVATAR_SZ[rank];
   const bSz = BADGE_SZ[rank];
   const pH = PILLAR_H[rank];
   const medalColors = MEDAL_BADGE_COLORS[rank];
   const badgeTextColor = rank === 2 ? CHARCOAL : '#fff';
+  const href = routes.reviewer(reviewer.id);
 
   const pillarColors = rank === 1 ? GOLD_COLORS : rank === 2 ? SILVER_COLORS : BRONZE_COLORS;
   const pillarLocs = rank === 1 ? GOLD_LOCS : rank === 2 ? SILVER_LOCS : BRONZE_LOCS;
 
   return (
-    <View style={[s.item, rank === 1 && s.itemCenter]}>
+    <Pressable
+      style={[s.item, rank === 1 && s.itemCenter]}
+      onPressIn={() => {
+        prefetchRouteIntent(`leaderboard-reviewer-podium:${reviewer.id}`, {
+          href,
+          router: router as unknown as { prefetch?: (path: string) => Promise<void> | void },
+        });
+      }}
+      onPress={() => router.push(href as never)}
+      accessibilityRole="button"
+    >
       <View style={s.avWrap}>
-        <Avatar src={reviewer.profilePicture} name={reviewer.name} size={avSz} />
+        <Avatar src={reviewer.profilePicture} size={avSz} />
         <LinearGradient
           colors={medalColors}
           style={[s.badge, { width: bSz, height: bSz, borderRadius: bSz / 2 }]}
@@ -90,7 +109,7 @@ function PodiumItem({ reviewer, rank }: { reviewer: TopReviewerDto; rank: 1 | 2 
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
       />
-    </View>
+    </Pressable>
   );
 }
 

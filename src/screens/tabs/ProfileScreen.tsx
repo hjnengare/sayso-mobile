@@ -20,6 +20,7 @@ import { useGlobalScrollToTop } from '../../hooks/useGlobalScrollToTop';
 import { routes } from '../../navigation/routes';
 import { AppHeader } from '../../components/AppHeader';
 import { LinkRow } from '../../components/LinkRow';
+import { TransitionItem } from '../../components/motion/TransitionItem';
 import { SkeletonBlock } from '../../components/SkeletonBlock';
 import { Text, TextInput } from '../../components/Typography';
 import { useSecurity } from '../../providers/SecurityProvider';
@@ -109,19 +110,23 @@ export default function ProfileScreen() {
   if (!user) {
     return (
       <SafeAreaView style={styles.container}>
-        <AppHeader title="Profile" subtitle="Sign in to access your account" showBell />
-        <View style={styles.center}>
-          <Text style={styles.sub}>You're not signed in.</Text>
-          <TouchableOpacity style={styles.btn} onPress={() => router.push(routes.login() as never)}>
-            <Text style={styles.btnTxt}>Sign in</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.btn, styles.secondaryBtn]}
-            onPress={() => router.push(routes.register() as never)}
-          >
-            <Text style={styles.secondaryBtnTxt}>Create account</Text>
-          </TouchableOpacity>
-        </View>
+        <TransitionItem variant="header" index={0}>
+          <AppHeader title="Profile" subtitle="Sign in to access your account" showBell />
+        </TransitionItem>
+        <TransitionItem variant="card" index={1}>
+          <View style={styles.center}>
+            <Text style={styles.sub}>You're not signed in.</Text>
+            <TouchableOpacity style={styles.btn} onPress={() => router.push(routes.onboarding() as never)}>
+              <Text style={styles.btnTxt}>Sign in</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.btn, styles.secondaryBtn]}
+              onPress={() => router.push(routes.onboarding() as never)}
+            >
+              <Text style={styles.secondaryBtnTxt}>Create account</Text>
+            </TouchableOpacity>
+          </View>
+        </TransitionItem>
       </SafeAreaView>
     );
   }
@@ -158,13 +163,18 @@ export default function ProfileScreen() {
         onScroll={handleScroll}
         scrollEventThrottle={16}
       >
-        <AppHeader title="Profile" subtitle="Account, achievements, and settings" showBell />
+        <TransitionItem variant="header" index={0}>
+          <AppHeader title="Profile" subtitle="Account, achievements, and settings" showBell />
+        </TransitionItem>
 
         {isLoading ? (
-          <ProfileSkeleton />
+          <TransitionItem variant="card" index={1}>
+            <ProfileSkeleton />
+          </TransitionItem>
         ) : (
           <>
-            <View style={styles.avatarSection}>
+            <TransitionItem variant="card" index={1}>
+              <View style={styles.avatarSection}>
               {profile?.avatar_url ? (
                 <Image source={{ uri: profile.avatar_url }} style={styles.avatar} contentFit="cover" />
               ) : (
@@ -213,71 +223,78 @@ export default function ProfileScreen() {
 
               {profile?.username ? <Text style={styles.username}>@{profile.username}</Text> : null}
               <Text style={styles.email}>{user.email}</Text>
-            </View>
-
-            <View style={styles.statsRow}>
-              <View style={styles.stat}>
-                <Text style={styles.statNum}>{(profile as { review_count?: number })?.review_count ?? 0}</Text>
-                <Text style={styles.statLabel}>Reviews</Text>
               </View>
-              <View style={styles.statDivider} />
-              <View style={styles.stat}>
-                <Text style={styles.statNum}>{(profile as { badge_count?: number })?.badge_count ?? 0}</Text>
-                <Text style={styles.statLabel}>Badges</Text>
-              </View>
-            </View>
+            </TransitionItem>
 
-            <View style={styles.links}>
-              <LinkRow
-                title="Notifications"
-                subtitle="Reads, replies, and updates"
-                badge={unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : undefined}
-                onPress={() => router.push(routes.notifications() as never)}
-              />
-              <LinkRow
-                title="Messages"
-                subtitle="Your direct conversations"
-                onPress={() => router.push(routes.dmInbox() as never)}
-              />
-              <LinkRow
-                title="Achievements"
-                subtitle="Track your milestones"
-                onPress={() => router.push(routes.achievements() as never)}
-              />
-              <LinkRow
-                title="Badges"
-                subtitle="See your earned badges"
-                onPress={() => router.push(routes.badges() as never)}
-              />
-              <LinkRow
-                title="Interests"
-                subtitle="Tune recommendations"
-                onPress={() => router.push(routes.interests() as never)}
-              />
-              <LinkRow
-                title="Deal breakers"
-                subtitle="Control what gets filtered out"
-                onPress={() => router.push(routes.dealBreakers() as never)}
-              />
-              <LinkRow
-                title="Leaderboard"
-                subtitle="See top contributors"
-                onPress={() => router.push(routes.leaderboard() as never)}
-              />
-              <LinkRow title="About" subtitle="Learn about Sayso" onPress={() => router.push(routes.about() as never)} />
-              <LinkRow title="Contact" subtitle="Reach support" onPress={() => router.push(routes.contact() as never)} />
-              <LinkRow title="Privacy" subtitle="Privacy policy" onPress={() => router.push(routes.privacy() as never)} />
-              <LinkRow title="Terms" subtitle="Terms of use" onPress={() => router.push(routes.terms() as never)} />
-            </View>
+            <TransitionItem variant="card" index={2}>
+              <View style={styles.statsRow}>
+                <View style={styles.stat}>
+                  <Text style={styles.statNum}>{(profile as { review_count?: number })?.review_count ?? 0}</Text>
+                  <Text style={styles.statLabel}>Reviews</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.stat}>
+                  <Text style={styles.statNum}>{(profile as { badge_count?: number })?.badge_count ?? 0}</Text>
+                  <Text style={styles.statLabel}>Badges</Text>
+                </View>
+              </View>
+            </TransitionItem>
+
+            <TransitionItem variant="card" index={3}>
+              <View style={styles.links}>
+                <LinkRow
+                  title="Notifications"
+                  subtitle="Reads, replies, and updates"
+                  badge={unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : undefined}
+                  onPress={() => router.push(routes.notifications() as never)}
+                />
+                <LinkRow
+                  title="Messages"
+                  subtitle="Your direct conversations"
+                  onPress={() => router.push(routes.dmInbox() as never)}
+                />
+                <LinkRow
+                  title="Achievements"
+                  subtitle="Track your milestones"
+                  onPress={() => router.push(routes.achievements() as never)}
+                />
+                <LinkRow
+                  title="Badges"
+                  subtitle="See your earned badges"
+                  onPress={() => router.push(routes.badges() as never)}
+                />
+                <LinkRow
+                  title="Interests"
+                  subtitle="Tune recommendations"
+                  onPress={() => router.push(routes.interests() as never)}
+                />
+                <LinkRow
+                  title="Deal breakers"
+                  subtitle="Control what gets filtered out"
+                  onPress={() => router.push(routes.dealBreakers() as never)}
+                />
+                <LinkRow
+                  title="Leaderboard"
+                  subtitle="See top contributors"
+                  onPress={() => router.push(routes.leaderboard() as never)}
+                />
+                <LinkRow title="About" subtitle="Learn about Sayso" onPress={() => router.push(routes.about() as never)} />
+                <LinkRow title="Contact" subtitle="Reach support" onPress={() => router.push(routes.contact() as never)} />
+                <LinkRow title="Privacy" subtitle="Privacy policy" onPress={() => router.push(routes.privacy() as never)} />
+                <LinkRow title="Terms" subtitle="Terms of use" onPress={() => router.push(routes.terms() as never)} />
+              </View>
+            </TransitionItem>
           </>
         )}
 
-        <View style={styles.actions}>
-          <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
-            <Ionicons name="log-out-outline" size={18} color="#EF4444" />
-            <Text style={styles.signOutTxt}>Sign out</Text>
-          </TouchableOpacity>
-        </View>
+        <TransitionItem variant="cta" index={4}>
+          <View style={styles.actions}>
+            <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
+              <Ionicons name="log-out-outline" size={18} color="#EF4444" />
+              <Text style={styles.signOutTxt}>Sign out</Text>
+            </TouchableOpacity>
+          </View>
+        </TransitionItem>
       </ScrollView>
     </SafeAreaView>
   );

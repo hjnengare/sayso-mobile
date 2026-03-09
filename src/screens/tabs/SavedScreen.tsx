@@ -18,6 +18,7 @@ import { routes } from '../../navigation/routes';
 import { AppHeader } from '../../components/AppHeader';
 import { BusinessCard } from '../../components/BusinessCard';
 import { EmptyState } from '../../components/EmptyState';
+import { TransitionItem } from '../../components/motion/TransitionItem';
 import { SkeletonCard } from '../../components/SkeletonCard';
 import { Text } from '../../components/Typography';
 
@@ -65,52 +66,64 @@ export default function SavedScreen() {
   if (!user) {
     return (
       <SafeAreaView style={styles.container}>
-        <AppHeader title="Saved" subtitle="Your saved businesses and lists" />
-        <EmptyState
-          icon="bookmark-outline"
-          title="Sign in to see your saved places"
-          message="Save your favorite businesses to find them again easily."
-          actionLabel="Sign in"
-          onAction={() => router.push(routes.login() as never)}
-        />
+        <TransitionItem variant="header" index={0}>
+          <AppHeader title="Saved" subtitle="Your saved businesses and lists" />
+        </TransitionItem>
+        <TransitionItem variant="card" index={1}>
+          <EmptyState
+            icon="bookmark-outline"
+            title="Sign in to see your saved places"
+            message="Save your favorite businesses to find them again easily."
+            actionLabel="Sign in"
+            onAction={() => router.push(routes.onboarding() as never)}
+          />
+        </TransitionItem>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <AppHeader title="Saved" subtitle="Your bookmarks across the app" />
+      <TransitionItem variant="header" index={0}>
+        <AppHeader title="Saved" subtitle="Your bookmarks across the app" />
+      </TransitionItem>
 
       {isLoading ? (
         <View style={styles.list}>
           {[1, 2, 3].map((item) => (
-            <SkeletonCard key={item} />
+            <TransitionItem key={item} variant="listItem" index={item}>
+              <SkeletonCard />
+            </TransitionItem>
           ))}
         </View>
       ) : businesses.length === 0 ? (
-        <EmptyState
-          icon="bookmark-outline"
-          title="Nothing saved yet"
-          message="Tap the bookmark on any business to save it here."
-          actionLabel="Explore businesses"
-          onAction={() => router.push(routes.home() as never)}
-        />
+        <TransitionItem variant="card" index={1}>
+          <EmptyState
+            icon="bookmark-outline"
+            title="Nothing saved yet"
+            message="Tap the bookmark on any business to save it here."
+            actionLabel="Explore businesses"
+            onAction={() => router.push(routes.home() as never)}
+          />
+        </TransitionItem>
       ) : (
         <FlatList
           ref={listRef}
           data={businesses}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View>
-              <BusinessCard business={item} />
-              <TouchableOpacity
-                style={styles.unsaveBtn}
-                onPress={() => unsave.mutate(item.id)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.unsaveTxt}>Remove</Text>
-              </TouchableOpacity>
-            </View>
+          renderItem={({ item, index }) => (
+            <TransitionItem variant="listItem" index={index}>
+              <View>
+                <BusinessCard business={item} />
+                <TouchableOpacity
+                  style={styles.unsaveBtn}
+                  onPress={() => unsave.mutate(item.id)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.unsaveTxt}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            </TransitionItem>
           )}
           contentContainerStyle={styles.list}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}

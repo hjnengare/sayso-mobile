@@ -14,18 +14,6 @@ export function useSavedBusinesses() {
   });
 }
 
-export function useSaveBusiness() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (businessId: string) =>
-      apiFetch('/api/user/saved', {
-        method: 'POST',
-        body: JSON.stringify({ business_id: businessId }),
-      }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['saved-businesses'] }),
-  });
-}
-
 export function useUnsaveBusiness() {
   const qc = useQueryClient();
   return useMutation({

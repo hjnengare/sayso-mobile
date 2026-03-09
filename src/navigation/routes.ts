@@ -2,7 +2,6 @@ import type { ReviewTargetType } from './types';
 
 export const routes = {
   home: () => '/home',
-  search: () => '/search',
   exploreHub: () => '/explore',
   saved: () => '/saved',
   profile: () => '/profile',
@@ -37,10 +36,7 @@ export const routes = {
   dmThread: (threadId: string) => `/dm/${threadId}`,
   city: (slug: string) => `/${slug}`,
   businessDetail: (id: string) => `/business/${id}`,
-  businessReviewForm: (id: string) => `/write-review/business/${id}`,
-  businessReviewEntry: (id: string) => `/business/${id}/review`,
-  businessReviews: (id: string) => `/business/${id}/review`,
-  eventDetail: (id: string) => `/event/${id}`,
+eventDetail: (id: string) => `/event/${id}`,
   specialDetail: (id: string) => `/special/${id}`,
   category: (category: string) => `/categories/${category}`,
   categorySubcategory: (category: string, subcategory: string) =>

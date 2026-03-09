@@ -1,8 +1,11 @@
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import { Platform, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { BusinessListItemDto } from '@sayso/contracts';
 import { routes } from '../navigation/routes';
+import { fetchBusinessDetail, getBusinessDetailQueryKey } from '../hooks/useBusinessDetail';
+import { markRouteTransitionStart } from '../lib/perf/perfMarkers';
+import { prefetchRouteIntent } from '../lib/perf/prefetchRouteIntent';
 import { getOverlayShadowStyle } from '../styles/overlayShadow';
 import { CARD_CTA_RADIUS, CARD_RADIUS } from '../styles/radii';
 import { CardSurface } from './CardSurface';
@@ -30,11 +33,31 @@ const ctaShadowStyle = getOverlayShadowStyle(CARD_CTA_RADIUS);
 function BusinessCardComponent({ business, style }: Props) {
   const router = useRouter();
   const businessIdentifier = getBusinessIdentifier(business);
+  const href = routes.businessDetail(businessIdentifier);
   const displayCategoryLabel = getDisplayCategoryLabel(business);
   const categorySlug = normalizeCategorySlug(business);
   const { hasRating, displayRating, totalReviews } = normalizeRating(business);
   const { image, isPlaceholder, placeholderImage } = resolveDisplayImage(business);
   const isFeaturedCard = String(business.badge ?? '').toLowerCase() === 'featured';
+
+  const handlePressIn = useCallback(() => {
+    prefetchRouteIntent(`business:${businessIdentifier}`, {
+      href,
+      router: router as unknown as { prefetch?: (path: string) => Promise<void> | void },
+      queryKeys: [
+        {
+          queryKey: getBusinessDetailQueryKey(businessIdentifier),
+          queryFn: () => fetchBusinessDetail(businessIdentifier),
+          staleTime: 120_000,
+        },
+      ],
+    });
+  }, [businessIdentifier, href, router]);
+
+  const handleNavigate = useCallback(() => {
+    markRouteTransitionStart(`business:${businessIdentifier}`);
+    router.push(href as never);
+  }, [businessIdentifier, href, router]);
 
   return (
     <CardSurface
@@ -43,7 +66,8 @@ function BusinessCardComponent({ business, style }: Props) {
       style={style}
       contentStyle={Platform.OS !== 'web' ? styles.frostedSurface : undefined}
       interactive
-      onPress={() => router.push(routes.businessDetail(businessIdentifier) as never)}
+      onPress={handleNavigate}
+      onPressIn={handlePressIn}
     >
       <View style={styles.media}>
         <BusinessCardImage imageUri={image} placeholderUri={placeholderImage} isPlaceholder={isPlaceholder} />
@@ -76,7 +100,18 @@ function BusinessCardComponent({ business, style }: Props) {
           style={({ pressed }) => [styles.reviewButton, ctaShadowStyle, pressed ? styles.reviewButtonPressed : null]}
           onPress={(event) => {
             event.stopPropagation();
-            router.push(routes.businessDetail(businessIdentifier) as never);
+            prefetchRouteIntent(`business:${businessIdentifier}`, {
+              href,
+              router: router as unknown as { prefetch?: (path: string) => Promise<void> | void },
+              queryKeys: [
+                {
+                  queryKey: getBusinessDetailQueryKey(businessIdentifier),
+                  queryFn: () => fetchBusinessDetail(businessIdentifier),
+                  staleTime: 120_000,
+                },
+              ],
+            });
+            handleNavigate();
           }}
         >
           <Text style={styles.reviewButtonText}>{isFeaturedCard ? 'Review' : 'View Details'}</Text>

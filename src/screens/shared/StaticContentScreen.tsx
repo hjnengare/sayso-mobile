@@ -11,6 +11,8 @@ import { Stack } from 'expo-router';
 import { Text } from '../../components/Typography';
 import { useGlobalScrollToTop } from '../../hooks/useGlobalScrollToTop';
 import { CARD_RADIUS } from '../../styles/radii';
+import { TransitionItem } from '../../components/motion/TransitionItem';
+import { useTransitionIndex } from '../../components/motion/TransitionScope';
 
 type Props = {
   title: string;
@@ -24,6 +26,7 @@ export function StaticContentScreen({ title, sections }: Props) {
   const scrollRef = useRef<ScrollView | null>(null);
   const scrollTopVisibleRef = useRef(false);
   const [showScrollTopButton, setShowScrollTopButton] = useState(false);
+  const transitionIndex = useTransitionIndex(0);
 
   const setScrollTopVisible = useCallback((visible: boolean) => {
     if (scrollTopVisibleRef.current === visible) return;
@@ -57,11 +60,13 @@ export function StaticContentScreen({ title, sections }: Props) {
         onScroll={handleScroll}
         scrollEventThrottle={16}
       >
-        {sections.map((section) => (
-          <View key={`${title}-${section.heading}`} style={styles.card}>
-            <Text style={styles.heading}>{section.heading}</Text>
-            <Text style={styles.body}>{section.body}</Text>
-          </View>
+        {sections.map((section, index) => (
+          <TransitionItem key={`${title}-${section.heading}`} variant="card" index={transitionIndex(index)}>
+            <View style={styles.card}>
+              <Text style={styles.heading}>{section.heading}</Text>
+              <Text style={styles.body}>{section.body}</Text>
+            </View>
+          </TransitionItem>
         ))}
       </ScrollView>
     </SafeAreaView>

@@ -7,7 +7,7 @@ export function useEventsSpecialsPreview(limit = 12, enabled = true) {
     queryKey: ['events-specials-preview', limit],
     enabled,
     queryFn: () => apiFetch<EventsAndSpecialsResponseDto>(`/api/events-and-specials?limit=${limit}`),
-    staleTime: 30_000,
+    staleTime: 90_000,
   });
 
   return {

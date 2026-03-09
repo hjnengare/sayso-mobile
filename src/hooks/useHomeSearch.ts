@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { BusinessListItemDto } from '@sayso/contracts';
 import { apiFetch } from '../lib/api';
 
@@ -43,7 +43,8 @@ export function useHomeSearch({
       const response = await apiFetch<BusinessesResponse>(`/api/businesses?${params.toString()}`);
       return response.businesses ?? response.data ?? [];
     },
-    staleTime: 10_000,
+    placeholderData: keepPreviousData,
+    staleTime: 20_000,
   });
 
   return {

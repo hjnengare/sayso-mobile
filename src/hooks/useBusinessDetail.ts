@@ -202,14 +202,20 @@ function normalizeBusinessDetail(raw: RawBusinessDetail, fallbackId: string): Bu
   };
 }
 
+export function getBusinessDetailQueryKey(id: string) {
+  return ['business', id] as const;
+}
+
+export async function fetchBusinessDetail(id: string) {
+  const payload = await apiFetch<RawBusinessDetail>(`/api/businesses/${id}`);
+  return normalizeBusinessDetail(payload, id);
+}
+
 export function useBusinessDetail(id: string) {
   return useQuery({
-    queryKey: ['business', id],
-    queryFn: async () => {
-      const payload = await apiFetch<RawBusinessDetail>(`/api/businesses/${id}`);
-      return normalizeBusinessDetail(payload, id);
-    },
+    queryKey: getBusinessDetailQueryKey(id),
+    queryFn: () => fetchBusinessDetail(id),
     enabled: !!id,
-    staleTime: 60_000,
+    staleTime: 120_000,
   });
 }

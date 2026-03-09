@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../../components/Typography';
 import { apiFetch } from '../../lib/api';
@@ -56,53 +57,82 @@ const PARTICLES = Array.from({ length: 30 }, (_, i) => ({
   size: 6 + Math.random() * 8,
 }));
 
+type DealbreakerIconName = 'shield-checkmark-outline' | 'time-outline' | 'happy-outline' | 'pricetag-outline';
+
+const DEALBREAKER_ICONS: Record<string, DealbreakerIconName> = {
+  trustworthiness: 'shield-checkmark-outline',
+  punctuality: 'time-outline',
+  friendliness: 'happy-outline',
+  'value-for-money': 'pricetag-outline',
+};
+
 export default function CompleteScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [selectedDealbreakers, setSelectedDealbreakers] = useState<string[]>([]);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const hasCompletedRef = useRef(false);
 
   // Entrance animations
-  const checkScale   = useRef(new Animated.Value(0)).current;
-  const checkOpacity = useRef(new Animated.Value(0)).current;
   const textOpacity  = useRef(new Animated.Value(0)).current;
   const textY        = useRef(new Animated.Value(20)).current;
   const btnOpacity   = useRef(new Animated.Value(0)).current;
   const btnY         = useRef(new Animated.Value(16)).current;
 
-  useEffect(() => {
-    // Fire completion API (best-effort)
-    apiFetch('/api/onboarding/complete', { method: 'POST' }).then(() => {
-      AsyncStorage.multiRemove([
+  const handleContinue = useCallback(async () => {
+    if (hasCompletedRef.current) return;
+    hasCompletedRef.current = true;
+    setIsCompleting(true);
+
+    try {
+      await apiFetch('/api/onboarding/complete', { method: 'POST' });
+      await AsyncStorage.multiRemove([
         'onboarding_interests',
         'onboarding_subcategories',
         'onboarding_dealbreakers',
       ]);
-    }).catch(() => {/* ignore */});
+    } catch {
+      // Best effort completion: still move to home to avoid trapping users.
+    } finally {
+      router.replace(routes.home() as never);
+    }
+  }, [router]);
+
+  useEffect(() => {
+    AsyncStorage.getItem('onboarding_dealbreakers')
+      .then((raw) => {
+        if (!raw) return;
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            setSelectedDealbreakers(parsed.filter((id): id is string => typeof id === 'string'));
+          }
+        } catch {
+          // Ignore malformed cache.
+        }
+      })
+      .catch(() => {
+        // Ignore storage errors.
+      });
 
     // Staggered entrance
     Animated.sequence([
       Animated.parallel([
-        Animated.timing(checkOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
-        Animated.spring(checkScale, { toValue: 1, damping: 10, stiffness: 200, useNativeDriver: true }),
+        Animated.timing(textOpacity, { toValue: 1, delay: 80, duration: 360, useNativeDriver: true }),
+        Animated.timing(textY, { toValue: 0, delay: 80, duration: 360, useNativeDriver: true }),
       ]),
       Animated.parallel([
-        Animated.timing(textOpacity, { toValue: 1, delay: 100, duration: 360, useNativeDriver: true }),
-        Animated.timing(textY, { toValue: 0, delay: 100, duration: 360, useNativeDriver: true }),
-      ]),
-      Animated.parallel([
-        Animated.timing(btnOpacity, { toValue: 1, delay: 60, duration: 320, useNativeDriver: true }),
-        Animated.timing(btnY, { toValue: 0, delay: 60, duration: 320, useNativeDriver: true }),
+        Animated.timing(btnOpacity, { toValue: 1, delay: 150, duration: 320, useNativeDriver: true }),
+        Animated.timing(btnY, { toValue: 0, delay: 150, duration: 320, useNativeDriver: true }),
       ]),
     ]).start();
 
-    // Auto-redirect after 3s
+    // Auto-redirect after 2s
     const timer = setTimeout(() => {
-      router.replace(routes.home() as never);
-    }, 3000);
+      void handleContinue();
+    }, 2000);
     return () => clearTimeout(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleContinue = () => router.replace(routes.home() as never);
+  }, [btnOpacity, btnY, handleContinue, textOpacity, textY]);
 
   return (
     <View style={[styles.root, { backgroundColor: '#E5E0E5' }]}>
@@ -122,33 +152,48 @@ export default function CompleteScreen() {
       </View>
 
       <View style={[styles.content, { paddingTop: insets.top + 40, paddingBottom: 24 }]}>
-
-        {/* Animated checkmark circle */}
-        <Animated.View style={[styles.checkCircle, { opacity: checkOpacity, transform: [{ scale: checkScale }] }]}>
-          <Ionicons name="checkmark" size={52} color="#FFFFFF" />
-        </Animated.View>
-
         {/* Text block */}
         <Animated.View style={[styles.textBlock, { opacity: textOpacity, transform: [{ translateY: textY }] }]}>
-          {/* Badge */}
-          <View style={styles.badge}>
-            <Ionicons name="ribbon-outline" size={14} color="#7D9B76" />
-            <Text style={styles.badgeText}>Setup Complete</Text>
-          </View>
-
           <Text style={styles.heading}>You're all set!</Text>
           <Text style={styles.subheading}>Time to discover what's out there.</Text>
+
+          {selectedDealbreakers.length > 0 ? (
+            <View style={styles.iconRow}>
+              {selectedDealbreakers.map((id) => {
+                const icon = DEALBREAKER_ICONS[id];
+                if (!icon) return null;
+                return (
+                  <View key={id} style={styles.iconBubble}>
+                    <Ionicons name={icon} size={22} color="#7D9B76" />
+                  </View>
+                );
+              })}
+            </View>
+          ) : null}
         </Animated.View>
 
         {/* CTA button */}
         <Animated.View style={[styles.btnWrap, { opacity: btnOpacity, transform: [{ translateY: btnY }] }]}>
           <Pressable
-            style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]}
-            onPress={handleContinue}
+            style={({ pressed }) => [styles.btn, isCompleting && styles.btnDisabled, pressed && !isCompleting && styles.btnPressed]}
+            onPress={() => void handleContinue()}
+            disabled={isCompleting}
           >
-            <Text style={styles.btnTxt}>Continue to Home</Text>
-            <Ionicons name="arrow-forward" size={18} color="#FFFFFF" style={{ marginLeft: 8 }} />
+            <LinearGradient
+              colors={['#722F37', '#7A404A']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.btnGradient}
+            >
+              <Text style={styles.btnTxt}>{isCompleting ? 'Going to Home...' : 'Continue to Home'}</Text>
+              {!isCompleting ? <Ionicons name="arrow-forward" size={18} color="#FFFFFF" style={{ marginLeft: 8 }} /> : null}
+            </LinearGradient>
           </Pressable>
+
+          <View style={styles.badge}>
+            <Ionicons name="checkmark-circle" size={14} color="#7D9B76" />
+            <Text style={styles.badgeText}>Setup Complete</Text>
+          </View>
           <Text style={styles.autoRedirectHint}>Redirecting automatically…</Text>
         </Animated.View>
 
@@ -169,16 +214,24 @@ const styles = StyleSheet.create({
     flex: 1, alignItems: 'center', justifyContent: 'center',
     paddingHorizontal: 32, gap: 32,
   },
-
-  checkCircle: {
-    width: 100, height: 100, borderRadius: 999,
-    backgroundColor: '#7D9B76',
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#7D9B76', shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.35, shadowRadius: 20, elevation: 12,
+  textBlock: { alignItems: 'center', gap: 12, width: '100%' },
+  iconRow: {
+    marginTop: 6,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
   },
-
-  textBlock: { alignItems: 'center', gap: 12 },
+  iconBubble: {
+    width: 46,
+    height: 46,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(125,155,118,0.32)',
+    backgroundColor: 'rgba(125,155,118,0.16)',
+  },
 
   badge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
@@ -189,7 +242,7 @@ const styles = StyleSheet.create({
   badgeText: { fontSize: 12, fontWeight: '700', color: '#7D9B76' },
 
   heading: {
-    fontSize: 36, fontWeight: '700', color: '#2D2D2D',
+    fontSize: 34, fontWeight: '700', color: '#2D2D2D',
     textAlign: 'center', letterSpacing: -0.5,
   },
   subheading: {
@@ -200,13 +253,21 @@ const styles = StyleSheet.create({
   btnWrap: { alignItems: 'center', gap: 12 },
 
   btn: {
+    borderRadius: 999,
+    overflow: 'hidden',
+    shadowColor: '#722F37',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.24,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  btnGradient: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#722F37', borderRadius: 999,
     paddingVertical: 16, paddingHorizontal: 32,
-    shadowColor: '#722F37', shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.28, shadowRadius: 12, elevation: 6,
+    justifyContent: 'center',
   },
   btnPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
+  btnDisabled: { opacity: 0.64, shadowOpacity: 0 },
   btnTxt: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
 
   autoRedirectHint: {

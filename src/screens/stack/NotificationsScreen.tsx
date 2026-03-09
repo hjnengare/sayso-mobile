@@ -18,6 +18,7 @@ import { NotificationItem } from '../../components/NotificationItem';
 import { EmptyState } from '../../components/EmptyState';
 import { SkeletonCard } from '../../components/SkeletonCard';
 import { Text } from '../../components/Typography';
+import { TransitionItem } from '../../components/motion/TransitionItem';
 
 export default function NotificationsScreen() {
   const { user } = useAuthSession();
@@ -65,12 +66,14 @@ export default function NotificationsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <Stack.Screen options={{ title: 'Notifications' }} />
-        <EmptyState
-          icon="notifications-outline"
-          title="Sign in to see notifications"
-          actionLabel="Sign in"
-          onAction={() => router.push(routes.login() as never)}
-        />
+        <TransitionItem variant="card" index={0}>
+          <EmptyState
+            icon="notifications-outline"
+            title="Sign in to see notifications"
+            actionLabel="Sign in"
+            onAction={() => router.push(routes.onboarding() as never)}
+          />
+        </TransitionItem>
       </SafeAreaView>
     );
   }
@@ -78,33 +81,43 @@ export default function NotificationsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ title: 'Notifications' }} />
-      <View style={styles.header}>
-        <Text style={styles.title}>Notifications</Text>
-        {unreadCount > 0 ? (
-          <TouchableOpacity onPress={() => markAllRead.mutate()} disabled={markAllRead.isPending}>
-            <Text style={styles.markRead}>Mark all read</Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
+      <TransitionItem variant="header" index={0}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Notifications</Text>
+          {unreadCount > 0 ? (
+            <TouchableOpacity onPress={() => markAllRead.mutate()} disabled={markAllRead.isPending}>
+              <Text style={styles.markRead}>Mark all read</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </TransitionItem>
 
       {isLoading ? (
         <View style={{ padding: 16 }}>
-          {[1, 2, 3].map((item) => (
-            <SkeletonCard key={item} />
+          {[1, 2, 3].map((item, index) => (
+            <TransitionItem key={item} variant="listItem" index={index + 1}>
+              <SkeletonCard />
+            </TransitionItem>
           ))}
         </View>
       ) : notifications.length === 0 ? (
-        <EmptyState
-          icon="notifications-outline"
-          title="No notifications yet"
-          message="We'll let you know when something happens."
-        />
+        <TransitionItem variant="card" index={1}>
+          <EmptyState
+            icon="notifications-outline"
+            title="No notifications yet"
+            message="We'll let you know when something happens."
+          />
+        </TransitionItem>
       ) : (
         <FlatList
           ref={listRef}
           data={notifications}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <NotificationItem notification={item} />}
+          renderItem={({ item, index }) => (
+            <TransitionItem variant="listItem" index={index + 1} animate={index < 10}>
+              <NotificationItem notification={item} />
+            </TransitionItem>
+          )}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
           showsVerticalScrollIndicator={false}
           onScroll={handleScroll}

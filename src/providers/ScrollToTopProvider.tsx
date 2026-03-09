@@ -56,7 +56,7 @@ export function ScrollToTopProvider({ children }: { children: ReactNode }) {
           onPress={handlePress}
           style={styles.fab}
         >
-          <Ionicons name="chevron-up" size={20} color="#FFFFFF" />
+          <Ionicons name="chevron-up" size={20} color="#2D2D2D" />
         </Pressable>
       ) : null}
     </ScrollToTopContext.Provider>
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#722F37',
+    backgroundColor: 'rgba(229,224,229,0.90)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2,

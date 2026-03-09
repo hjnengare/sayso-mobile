@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { HeaderBellButton } from './HeaderBellButton';
+import { HeaderDmBellActions } from './HeaderDmBellActions';
 import { Text } from './Typography';
 
 type Props = {
@@ -15,7 +15,7 @@ export function AppHeader({ title, subtitle, showBell = false }: Props) {
         <Text style={styles.title}>{title}</Text>
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
-      {showBell ? <HeaderBellButton /> : null}
+      {showBell ? <HeaderDmBellActions /> : null}
     </View>
   );
 }
@@ -27,8 +27,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 16,
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
+    paddingTop: 24,
+    paddingBottom: 16,
   },
   copy: {
     flex: 1,

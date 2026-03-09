@@ -1,18 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  Easing,
+  InteractionManager,
   NativeScrollEvent,
   NativeSyntheticEvent,
-  Pressable,
   SafeAreaView,
   ScrollView,
-  StyleSheet,
   View,
-  type StyleProp,
-  type ViewStyle,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { EmptyState } from '../../components/EmptyState';
 import { Text } from '../../components/Typography';
@@ -45,53 +40,17 @@ import {
 } from '../../components/business-detail/utils';
 import { useBusinessDetail } from '../../hooks/useBusinessDetail';
 import { useGlobalScrollToTop } from '../../hooks/useGlobalScrollToTop';
+import { useRealtimeQueryInvalidation } from '../../hooks/useRealtimeQueryInvalidation';
 import { useAuthSession } from '../../hooks/useSession';
+import { TransitionItem } from '../../components/motion/TransitionItem';
+import { markFirstContentful, markInteractive } from '../../lib/perf/perfMarkers';
 import { routes } from '../../navigation/routes';
-import { businessDetailColors, businessDetailSpacing } from '../../components/business-detail/styles';
+import { businessDetailColors } from '../../components/business-detail/styles';
+import { styles } from './business-screen/businessScreenStyles';
 
 type Props = {
   initialTab?: 'overview' | 'reviews';
 };
-
-type RevealBlockProps = {
-  children: ReactNode;
-  delay?: number;
-  style?: StyleProp<ViewStyle>;
-};
-
-function RevealBlock({ children, delay = 0, style }: RevealBlockProps) {
-  const anim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      Animated.timing(anim, {
-        toValue: 1,
-        duration: 440,
-        easing: Easing.out(Easing.back(1.08)),
-        useNativeDriver: true,
-      }).start();
-    }, delay);
-
-    return () => {
-      clearTimeout(timer);
-      anim.stopAnimation();
-    };
-  }, [anim, delay]);
-
-  return (
-    <Animated.View
-      style={[
-        style,
-        {
-          opacity: anim,
-          transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }],
-        },
-      ]}
-    >
-      {children}
-    </Animated.View>
-  );
-}
 
 export default function BusinessScreen({ initialTab }: Props) {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -100,11 +59,41 @@ export default function BusinessScreen({ initialTab }: Props) {
 
   const { data: business, isLoading, isError } = useBusinessDetail(id);
 
+  const realtimeTargets = useMemo(
+    () => [
+      {
+        key: `business-detail-${id}`,
+        table: 'businesses',
+        filter: `id=eq.${id}`,
+        queryKeys: [['business', id]],
+        enabled: Boolean(id),
+      },
+      {
+        key: `business-reviews-${id}`,
+        table: 'reviews',
+        filter: `business_id=eq.${id}`,
+        queryKeys: [['business', id]],
+        enabled: Boolean(id),
+      },
+    ],
+    [id]
+  );
+
+  useRealtimeQueryInvalidation(realtimeTargets);
+
   const images = useMemo(() => (business ? normalizeBusinessImages(business) : []), [business]);
   const ratingMeta = useMemo(() => (business ? normalizeBusinessRating(business) : { rating: 0, reviewCount: 0 }), [business]);
   const categoryText = useMemo(() => (business ? normalizeCategoryText(business) : 'Business'), [business]);
   const locationText = useMemo(() => (business ? normalizeLocationText(business) : 'Cape Town'), [business]);
   const descriptionText = useMemo(() => (business ? normalizeDescriptionText(business) : ''), [business]);
+
+  useEffect(() => {
+    if (business && !isLoading) {
+      const markerKey = `business:${business.id}`;
+      markFirstContentful(markerKey);
+      markInteractive(markerKey);
+    }
+  }, [business, isLoading]);
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -135,12 +124,7 @@ export default function BusinessScreen({ initialTab }: Props) {
 
   const handleLeaveReview = () => {
     if (!business) return;
-    if (!user) {
-      router.push(routes.login() as never);
-      return;
-    }
-
-    router.push(routes.businessReviewForm(business.id) as never);
+    router.push(routes.writeReview('business', business.id) as never);
   };
 
   const isBusinessOwner = Boolean(user && business?.owner_id && user.id === business.owner_id);
@@ -168,7 +152,21 @@ export default function BusinessScreen({ initialTab }: Props) {
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [showScrollTopButton, setShowScrollTopButton] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
+  const [showDeferredSections, setShowDeferredSections] = useState(false);
   const contactModalTriggered = useRef(false);
+
+  useEffect(() => {
+    setShowDeferredSections(false);
+    const task = InteractionManager.runAfterInteractions(() => {
+      requestAnimationFrame(() => {
+        setShowDeferredSections(true);
+      });
+    });
+
+    return () => {
+      task.cancel();
+    };
+  }, [business?.id]);
 
   const setScrollTopVisible = useCallback((visible: boolean) => {
     if (scrollTopVisibleRef.current === visible) return;
@@ -185,17 +183,6 @@ export default function BusinessScreen({ initialTab }: Props) {
     enabled: true,
     onScrollToTop: handleScrollToTop,
   });
-
-  const fabAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.spring(fabAnim, {
-      toValue: showScrollTopButton ? 1 : 0,
-      damping: 18,
-      stiffness: 260,
-      useNativeDriver: true,
-    }).start();
-  }, [showScrollTopButton, fabAnim]);
 
   const setHeaderState = useCallback(
     (collapsed: boolean) => {
@@ -284,7 +271,7 @@ export default function BusinessScreen({ initialTab }: Props) {
         scrollEventThrottle={16}
       >
         <View style={styles.mainColumn}>
-          <RevealBlock delay={0}>
+          <TransitionItem variant="card" index={0}>
             <BusinessHeroCarousel
               businessName={business.name}
               images={images}
@@ -293,22 +280,22 @@ export default function BusinessScreen({ initialTab }: Props) {
               subcategorySlug={business.primary_subcategory_slug ?? business.sub_interest_id ?? business.subInterestId}
               interestId={business.primary_category_slug ?? business.interest_id ?? business.interestId}
             />
-          </RevealBlock>
+          </TransitionItem>
 
-          <RevealBlock delay={60}>
+          <TransitionItem variant="card" index={1}>
             <BusinessInfoBlock
               name={business.name}
               rating={ratingMeta.rating}
               category={categoryText}
               location={locationText}
             />
-          </RevealBlock>
+          </TransitionItem>
 
-          <RevealBlock delay={120}>
+          <TransitionItem variant="card" index={2}>
             <BusinessDescriptionCard description={descriptionText} />
-          </RevealBlock>
+          </TransitionItem>
 
-          <RevealBlock delay={180}>
+          <TransitionItem variant="card" index={3}>
             <BusinessDetailsCard
               priceRange={business.price_range ?? business.priceRange}
               verified={business.verified}
@@ -316,108 +303,95 @@ export default function BusinessScreen({ initialTab }: Props) {
               openingHours={business.openingHours}
               opening_hours={business.opening_hours}
             />
-          </RevealBlock>
+          </TransitionItem>
 
-          <RevealBlock delay={240}>
-            <BusinessPhotoGrid businessName={business.name} photos={images} />
-          </RevealBlock>
+          {showDeferredSections ? (
+            <>
+              <TransitionItem variant="card" index={4}>
+                <BusinessPhotoGrid businessName={business.name} photos={images} />
+              </TransitionItem>
 
-          <RevealBlock delay={300}>
-            <BusinessLocationCard
-              name={business.name}
-              address={business.address}
-              location={business.location}
-              latitude={business.lat}
-              longitude={business.lng}
-            />
-          </RevealBlock>
+              <TransitionItem variant="card" index={5}>
+                <BusinessLocationCard
+                  name={business.name}
+                  address={business.address}
+                  location={business.location}
+                  latitude={business.lat}
+                  longitude={business.lng}
+                />
+              </TransitionItem>
 
-          <RevealBlock delay={360}>
-            <BusinessContactInfoCard
-              phone={business.phone}
-              email={business.email}
-              website={business.website}
-              address={business.address}
-              location={business.location}
-            />
-          </RevealBlock>
+              <TransitionItem variant="card" index={6}>
+                <BusinessContactInfoCard
+                  phone={business.phone}
+                  email={business.email}
+                  website={business.website}
+                  address={business.address}
+                  location={business.location}
+                />
+              </TransitionItem>
 
-          <RevealBlock delay={420}>
-            <BusinessActionCard
-              onPressLeaveReview={handleLeaveReview}
-              onPressEditBusiness={() => router.push('/role-unsupported' as never)}
-              isBusinessOwner={isBusinessOwner}
-            />
-          </RevealBlock>
+              <TransitionItem variant="card" index={7}>
+                <BusinessActionCard
+                  onPressLeaveReview={handleLeaveReview}
+                  onPressEditBusiness={() => router.push('/role-unsupported' as never)}
+                  isBusinessOwner={isBusinessOwner}
+                />
+              </TransitionItem>
 
-          <RevealBlock delay={480}>
-            <PersonalizationInsightsCard
-              business={business}
-              onPressLogin={() => router.push(routes.login() as never)}
-            />
-          </RevealBlock>
+              <TransitionItem variant="card" index={8}>
+                <PersonalizationInsightsCard
+                  business={business}
+                  onPressLogin={() => router.push(routes.onboarding() as never)}
+                />
+              </TransitionItem>
 
-          <RevealBlock delay={540}>
-            <BusinessPerformanceInsightsCard
-              punctuality={business.stats?.percentiles?.punctuality}
-              costEffectiveness={business.stats?.percentiles?.['cost-effectiveness']}
-              friendliness={business.stats?.percentiles?.friendliness}
-              trustworthiness={business.stats?.percentiles?.trustworthiness}
-            />
-          </RevealBlock>
+              <TransitionItem variant="card" index={9}>
+                <BusinessPerformanceInsightsCard
+                  punctuality={business.stats?.percentiles?.punctuality}
+                  costEffectiveness={business.stats?.percentiles?.['cost-effectiveness']}
+                  friendliness={business.stats?.percentiles?.friendliness}
+                  trustworthiness={business.stats?.percentiles?.trustworthiness}
+                />
+              </TransitionItem>
 
-          <RevealBlock delay={600}>
-            <BusinessContactCard
-              businessId={business.id}
-              businessName={business.name}
-              phone={business.phone}
-            />
-          </RevealBlock>
+              <TransitionItem variant="card" index={10}>
+                <BusinessContactCard
+                  businessId={business.id}
+                  businessName={business.name}
+                  phone={business.phone}
+                />
+              </TransitionItem>
+            </>
+          ) : null}
         </View>
 
-        <RevealBlock delay={660}>
-          <BusinessOwnedEventsSection businessId={business.id} businessName={business.name} />
-        </RevealBlock>
+        {showDeferredSections ? (
+          <>
+            <TransitionItem variant="card" index={11}>
+              <BusinessOwnedEventsSection businessId={business.id} businessName={business.name} />
+            </TransitionItem>
 
-        <RevealBlock delay={720}>
-          <BusinessReviewsSection businessId={business.id} onPressWriteReview={handleLeaveReview} />
-        </RevealBlock>
+            <TransitionItem variant="card" index={12}>
+              <BusinessReviewsSection businessId={business.id} onPressWriteReview={handleLeaveReview} />
+            </TransitionItem>
 
-        <RevealBlock delay={780}>
-          <SimilarBusinessesSection businessId={business.id} />
-        </RevealBlock>
+            <TransitionItem variant="card" index={13}>
+              <SimilarBusinessesSection businessId={business.id} />
+            </TransitionItem>
+          </>
+        ) : null}
 
         {initialTab === 'reviews' ? (
-          <RevealBlock delay={840}>
+          <TransitionItem variant="card" index={14}>
             <View style={styles.deeplinkHint}>
               <Text style={styles.deeplinkHintText}>
                 This route now opens the write-review flow to match web behavior.
               </Text>
             </View>
-          </RevealBlock>
+          </TransitionItem>
         ) : null}
       </ScrollView>
-
-      {/* Scroll-to-top FAB */}
-      <Animated.View
-        style={[
-          styles.scrollTopFab,
-          {
-            opacity: fabAnim,
-            transform: [{ scale: fabAnim.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) }],
-          },
-        ]}
-        pointerEvents={showScrollTopButton ? 'box-none' : 'none'}
-      >
-        <Pressable
-          style={({ pressed }) => [styles.scrollTopBtn, pressed && styles.scrollTopBtnPressed]}
-          onPress={handleScrollToTop}
-          accessibilityRole="button"
-          accessibilityLabel="Scroll to top"
-        >
-          <Ionicons name="chevron-up" size={20} color="#2D3748" />
-        </Pressable>
-      </Animated.View>
 
       <ContactBusinessModal
         visible={showContactModal}
@@ -431,67 +405,3 @@ export default function BusinessScreen({ initialTab }: Props) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: businessDetailColors.page,
-  },
-  stickyHeader: {
-    paddingHorizontal: businessDetailSpacing.pageGutter,
-    paddingTop: 10,
-    paddingBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 8,
-  },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    paddingTop: 6,
-    paddingBottom: 26,
-    gap: 16,
-  },
-  mainColumn: {
-    marginHorizontal: businessDetailSpacing.pageGutter,
-    gap: 14,
-  },
-  scrollTopFab: {
-    position: 'absolute',
-    right: 16,
-    bottom: 32,
-    zIndex: 100,
-  },
-  scrollTopBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 999,
-    backgroundColor: 'rgba(229,224,229,0.90)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  scrollTopBtnPressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.95 }],
-  },
-  deeplinkHint: {
-    marginHorizontal: businessDetailSpacing.pageGutter,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: 'rgba(229,224,229,0.66)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.34)',
-  },
-  deeplinkHintText: {
-    color: businessDetailColors.textSubtle,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-});

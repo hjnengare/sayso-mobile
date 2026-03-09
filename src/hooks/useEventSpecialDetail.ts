@@ -115,15 +115,21 @@ function getErrorStatus(error: Error | null) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+export function getEventSpecialDetailQueryKey(id: string | null | undefined) {
+  return ['event-special-detail', id] as const;
+}
+
+export async function fetchEventSpecialDetail(id: string) {
+  const payload = await apiFetch<RawDetailResponse>(`/api/events-and-specials/${id}`);
+  return normalizeEventSpecialDetail(id, payload);
+}
+
 export function useEventSpecialDetail(id: string | null | undefined) {
   const query = useQuery({
-    queryKey: ['event-special-detail', id],
+    queryKey: getEventSpecialDetailQueryKey(id),
     enabled: Boolean(id),
-    queryFn: async () => {
-      const payload = await apiFetch<RawDetailResponse>(`/api/events-and-specials/${id}`);
-      return normalizeEventSpecialDetail(id!, payload);
-    },
-    staleTime: 60_000,
+    queryFn: () => fetchEventSpecialDetail(id!),
+    staleTime: 120_000,
   });
 
   const error = query.error instanceof Error ? query.error : null;

@@ -1,25 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  Animated,
-  FlatList,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
-  Pressable,
-  RefreshControl,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, FlatList, ScrollView, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import type { BusinessListItemDto, TopReviewerDto } from '@sayso/contracts';
-import { CardSurface } from '../../components/CardSurface';
-import { HeaderBellButton } from '../../components/HeaderBellButton';
-import { Text } from '../../components/Typography';
 import { useEventsSpecialsPreview } from '../../hooks/useEventsSpecialsPreview';
 import { useFeaturedBusinesses } from '../../hooks/useFeaturedBusinesses';
 import { useForYouBusinesses } from '../../hooks/useForYou';
@@ -29,19 +12,9 @@ import { useAuthSession } from '../../hooks/useSession';
 import { useTopReviewers } from '../../hooks/useTopReviewers';
 import { useTrending } from '../../hooks/useTrending';
 import { routes } from '../../navigation/routes';
-import { HomeBusinessRow } from './home/HomeBusinessRow';
-import { HomeCommunityHighlightsSection } from './home/HomeCommunityHighlightsSection';
-import { HomeEventsSpecialsRow } from './home/HomeEventsSpecialsRow';
-import { HomeSearchBar } from './home/HomeSearchBar';
-import { HomeSearchResults } from './home/HomeSearchResults';
-import { HomeSectionHeader } from './home/HomeSectionHeader';
-import { homeTokens } from './home/HomeTokens';
-import { FROSTED_CARD_BORDER_COLOR } from '../../styles/cardSurface';
-import { getOverlayShadowStyle } from '../../styles/overlayShadow';
-import { CARD_CTA_RADIUS, CARD_RADIUS } from '../../styles/radii';
 import { useGlobalScrollToTop } from '../../hooks/useGlobalScrollToTop';
-
-const ctaShadowStyle = getOverlayShadowStyle(CARD_CTA_RADIUS);
+import { useRealtimeQueryInvalidation } from '../../hooks/useRealtimeQueryInvalidation';
+import { HomeScreenView } from './home-screen/HomeScreenView';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -88,6 +61,34 @@ export default function HomeScreen() {
     longitude,
     limit: 20,
   });
+
+  const realtimeTargets = useMemo(
+    () => [
+      {
+        key: 'home-businesses',
+        table: 'businesses',
+        queryKeys: [['for-you'], ['trending'], ['featured-businesses'], ['home-search']],
+      },
+      {
+        key: 'home-events-and-specials',
+        table: 'events_and_specials',
+        queryKeys: [['events-specials-preview']],
+      },
+      {
+        key: 'home-reviews',
+        table: 'reviews',
+        queryKeys: [['recent-reviews'], ['top-reviewers'], ['trending'], ['for-you'], ['featured-businesses']],
+      },
+      {
+        key: 'home-review-helpful-votes',
+        table: 'review_helpful_votes',
+        queryKeys: [['recent-reviews'], ['top-reviewers']],
+      },
+    ],
+    []
+  );
+
+  useRealtimeQueryInvalidation(realtimeTargets);
 
   useEffect(() => {
     if (debouncedQuery.length < 2) {
@@ -178,17 +179,6 @@ export default function HomeScreen() {
     onScrollToTop: handleGlobalScrollToTop,
   });
 
-  const fabAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.spring(fabAnim, {
-      toValue: showScrollTopButton ? 1 : 0,
-      damping: 18,
-      stiffness: 260,
-      useNativeDriver: true,
-    }).start();
-  }, [showScrollTopButton, fabAnim]);
-
   useEffect(() => {
     setScrollTopVisible(false);
   }, [isSearchActive, setScrollTopVisible]);
@@ -269,399 +259,53 @@ export default function HomeScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Animated.View
-        style={[
-          styles.headerWrap,
-          {
-            paddingTop: headerPaddingTop,
-            paddingBottom: headerPaddingBottom,
-          },
-        ]}
-      >
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.headerMaterial,
-            headerCollapsed ? styles.headerMaterialCollapsed : null,
-            { opacity: headerMaterialOpacity },
-          ]}
-        />
-        <Animated.View
-          pointerEvents={headerCollapsed ? 'none' : 'auto'}
-          style={[
-            styles.headerRowWrap,
-            {
-              height: headerRowHeight,
-              opacity: headerRowOpacity,
-              transform: [{ translateY: headerRowTranslateY }, { scale: headerRowScale }],
-            },
-          ]}
-        >
-          <View style={styles.headerRow}>
-            <View style={styles.headerCopy}>
-              <Text style={styles.headerTitle}>Sayso</Text>
-            </View>
-            <HeaderBellButton />
-          </View>
-        </Animated.View>
-        <Animated.View
-          style={[
-            styles.searchBarWrap,
-            {
-              marginTop: searchBarMarginTop,
-              transform: [{ translateY: searchBarTranslateY }, { scale: searchBarScale }],
-            },
-          ]}
-        >
-          <HomeSearchBar
-            value={searchInput}
-            onChangeText={setSearchInput}
-            onClear={() => setSearchInput('')}
-            isFetching={isSearchActive && search.isFetching}
-          />
-        </Animated.View>
-      </Animated.View>
-
-      {isSearchActive ? (
-        <HomeSearchResults
-          listRef={searchResultsRef}
-          query={debouncedQuery}
-          results={search.businesses}
-          isLoading={search.isLoading}
-          error={search.error}
-          minRating={minRating}
-          distanceKm={distanceKm}
-          locationDenied={locationDenied}
-          onSetMinRating={(value) => setMinRating(value)}
-          onSetDistanceKm={handleDistanceChange}
-          onClearFilters={() => {
-            setMinRating(null);
-            setDistanceKm(null);
-            setLocationDenied(false);
-          }}
-          onRefresh={() => {
-            void handleRefresh();
-          }}
-          refreshing={refreshing}
-          onScroll={handleScroll}
-        />
-      ) : (
-        <Animated.ScrollView
-          ref={homeFeedRef}
-          style={styles.scroll}
-          showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void handleRefresh()} />}
-          contentContainerStyle={styles.content}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-        >
-          <View style={styles.section}>
-            <HomeSectionHeader
-              title="For You"
-              actionLabel={user ? 'See More' : undefined}
-              onPress={user ? () => router.push(routes.forYou() as never) : undefined}
-              delay={0}
-            />
-
-            {!user ? (
-              <CardSurface
-                radius={CARD_RADIUS}
-                style={styles.guestCardWrap}
-                contentStyle={styles.guestCardSurface}
-              >
-                <LinearGradient
-                  colors={[homeTokens.coral, homeTokens.coralDark]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.guestCard}
-                >
-                  <View style={styles.guestBadge}>
-                    <Text style={styles.guestBadgeText}>For You</Text>
-                  </View>
-                  <Text style={styles.guestTitle}>Create an account to unlock personalised recommendations.</Text>
-                  <View style={styles.guestActions}>
-                    <TouchableOpacity
-                      style={[styles.primaryGuestButton, ctaShadowStyle]}
-                      onPress={() => router.push(routes.register() as never)}
-                      activeOpacity={0.88}
-                    >
-                      <Text style={styles.primaryGuestButtonText}>Create Account</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.secondaryGuestButton, ctaShadowStyle]}
-                      onPress={() => router.push(routes.login() as never)}
-                      activeOpacity={0.88}
-                    >
-                      <Text style={styles.secondaryGuestButtonText}>Sign In</Text>
-                    </TouchableOpacity>
-                  </View>
-                </LinearGradient>
-              </CardSurface>
-            ) : forYou.error ? (
-              <View style={styles.messageCard}>
-                <Text style={styles.messageTitle}>Couldn&apos;t load personalised picks right now.</Text>
-                <Text style={styles.messageText}>We&apos;ll retry in the background.</Text>
-              </View>
-            ) : forYou.isLoading ? (
-              <HomeBusinessRow
-                items={[]}
-                loading
-                emptyTitle="Curated from your interests"
-                emptyMessage="Based on what you selected, no matches in this section yet. See more on For You or explore Trending."
-              />
-            ) : forYou.businesses.length > 0 ? (
-              <HomeBusinessRow
-                items={forYou.businesses}
-                loading={false}
-                emptyTitle="Curated from your interests"
-                emptyMessage="Based on what you selected, no matches in this section yet. See more on For You or explore Trending."
-              />
-            ) : (
-              <View style={styles.messageCard}>
-                <Text style={styles.messageTitle}>Curated from your interests</Text>
-                <Text style={styles.messageText}>
-                  Based on what you selected, no matches in this section yet. See more on For You or explore Trending.
-                </Text>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.section}>
-            <HomeSectionHeader
-              title="Trending Now"
-              actionLabel="See More"
-              onPress={() => router.push(routes.trending() as never)}
-              delay={100}
-            />
-            <HomeBusinessRow
-              items={trending.data?.businesses ?? []}
-              loading={trending.isLoading}
-              error={trending.error instanceof Error ? trending.error.message : null}
-              emptyTitle="Nothing trending yet"
-              emptyMessage="Check back soon for live activity."
-            />
-          </View>
-
-          <View style={styles.section}>
-            <HomeSectionHeader
-              title="Events & Specials"
-              actionLabel="See More"
-              onPress={() => router.push(routes.eventsSpecials() as never)}
-              delay={200}
-            />
-            <HomeEventsSpecialsRow
-              items={events.items}
-              loading={events.isLoading}
-              error={events.error}
-            />
-          </View>
-
-          <HomeCommunityHighlightsSection
-            reviewers={reviewers.reviewers}
-            reviewersMode={reviewers.mode}
-            recentReviews={recentReviews.reviews}
-            reviewersLoading={reviewers.isLoading || recentReviews.isLoading}
-            reviewersError={reviewers.error ?? recentReviews.error}
-            featuredBusinesses={featured.featuredBusinesses}
-            featuredLoading={featured.isLoading}
-            featuredError={featured.error}
-            onPressContributors={() => router.push(routes.leaderboard('contributors') as never)}
-            onPressFeatured={() => router.push(routes.leaderboard('businesses') as never)}
-            onPressBadges={() => router.push(routes.badges() as never)}
-            onPressReviewer={navigateToReviewer}
-          />
-        </Animated.ScrollView>
-      )}
-
-      {/* Scroll-to-top FAB */}
-      <Animated.View
-        style={[
-          styles.scrollTopFab,
-          {
-            opacity: fabAnim,
-            transform: [{ scale: fabAnim.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) }],
-          },
-        ]}
-        pointerEvents={showScrollTopButton ? 'box-none' : 'none'}
-      >
-        <Pressable
-          style={({ pressed }) => [styles.scrollTopBtn, pressed && styles.scrollTopBtnPressed]}
-          onPress={handleGlobalScrollToTop}
-          accessibilityRole="button"
-          accessibilityLabel="Scroll to top"
-        >
-          <Ionicons name="chevron-up" size={20} color="#2D3748" />
-        </Pressable>
-      </Animated.View>
-    </SafeAreaView>
+    <HomeScreenView
+      user={user ? { id: user.id } : null}
+      homeFeedRef={homeFeedRef}
+      searchResultsRef={searchResultsRef}
+      isSearchActive={isSearchActive}
+      searchInput={searchInput}
+      setSearchInput={setSearchInput}
+      searchIsFetching={search.isFetching}
+      searchBusinesses={search.businesses}
+      searchIsLoading={search.isLoading}
+      searchError={search.error}
+      debouncedQuery={debouncedQuery}
+      minRating={minRating}
+      distanceKm={distanceKm}
+      locationDenied={locationDenied}
+      setMinRating={setMinRating}
+      setDistanceKm={setDistanceKm}
+      setLocationDenied={setLocationDenied}
+      handleDistanceChange={handleDistanceChange}
+      handleRefresh={handleRefresh}
+      refreshing={refreshing}
+      handleScroll={handleScroll}
+      headerCollapsed={headerCollapsed}
+      headerPaddingTop={headerPaddingTop}
+      headerPaddingBottom={headerPaddingBottom}
+      headerRowHeight={headerRowHeight}
+      headerRowOpacity={headerRowOpacity}
+      headerRowTranslateY={headerRowTranslateY}
+      headerRowScale={headerRowScale}
+      headerMaterialOpacity={headerMaterialOpacity}
+      searchBarMarginTop={searchBarMarginTop}
+      searchBarTranslateY={searchBarTranslateY}
+      searchBarScale={searchBarScale}
+      forYou={{ businesses: forYou.businesses, isLoading: forYou.isLoading, error: forYou.error }}
+      trending={{ data: trending.data, isLoading: trending.isLoading, error: trending.error instanceof Error ? trending.error : null }}
+      events={{ items: events.items, isLoading: events.isLoading, error: events.error }}
+      reviewers={{ reviewers: reviewers.reviewers, mode: reviewers.mode, isLoading: reviewers.isLoading, error: reviewers.error }}
+      recentReviews={{ reviews: recentReviews.reviews, isLoading: recentReviews.isLoading, error: recentReviews.error }}
+      featured={{ featuredBusinesses: featured.featuredBusinesses, isLoading: featured.isLoading, error: featured.error }}
+      navigateToReviewer={navigateToReviewer}
+      onNavigateForYou={() => router.push(routes.forYou() as never)}
+      onNavigateTrending={() => router.push(routes.trending() as never)}
+      onNavigateEvents={() => router.push(routes.eventsSpecials() as never)}
+      onNavigateLeaderboardContributors={() => router.push(routes.leaderboard('contributors') as never)}
+      onNavigateLeaderboardBusinesses={() => router.push(routes.leaderboard('businesses') as never)}
+      onNavigateBadges={() => router.push(routes.badges() as never)}
+      onNavigateOnboarding={() => router.push(routes.onboarding() as never)}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: homeTokens.offWhite,
-  },
-  headerWrap: {
-    backgroundColor: homeTokens.offWhite,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  headerMaterial: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: homeTokens.coral,
-    borderBottomWidth: 1,
-    borderBottomColor: FROSTED_CARD_BORDER_COLOR,
-  },
-  headerMaterialCollapsed: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.05,
-    shadowRadius: 18,
-    elevation: 6,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 16,
-    paddingHorizontal: 20,
-    position: 'relative',
-    zIndex: 1,
-  },
-  headerRowWrap: {
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  headerCopy: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 30,
-    fontFamily: 'MonarchParadox',
-    color: homeTokens.charcoal,
-    letterSpacing: 0.2,
-  },
-  searchBarWrap: {
-    marginHorizontal: 16,
-    height: 60,
-    padding: 4,
-    overflow: 'visible',
-    position: 'relative',
-    zIndex: 1,
-  },
-  content: {
-    backgroundColor: homeTokens.offWhite,
-  },
-  section: {
-    paddingTop: 18,
-    backgroundColor: homeTokens.offWhite,
-  },
-  scroll: {
-    backgroundColor: homeTokens.offWhite,
-  },
-  guestCardWrap: {
-    marginHorizontal: homeTokens.pageGutter,
-  },
-  guestCardSurface: {
-    borderWidth: 0,
-    backgroundColor: 'transparent',
-  },
-  guestCard: {
-    borderRadius: CARD_RADIUS,
-    padding: 20,
-  },
-  guestBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    marginBottom: 14,
-  },
-  guestBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: homeTokens.coral,
-  },
-  guestTitle: {
-    fontSize: 24,
-    lineHeight: 31,
-    fontWeight: '700',
-    color: homeTokens.white,
-    maxWidth: 320,
-  },
-  guestActions: {
-    gap: 12,
-    marginTop: 18,
-  },
-  primaryGuestButton: {
-    borderRadius: CARD_CTA_RADIUS,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    backgroundColor: homeTokens.white,
-  },
-  primaryGuestButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: homeTokens.coral,
-    textAlign: 'center',
-  },
-  secondaryGuestButton: {
-    borderRadius: CARD_CTA_RADIUS,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.24)',
-  },
-  secondaryGuestButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: homeTokens.white,
-    textAlign: 'center',
-  },
-  messageCard: {
-    marginHorizontal: homeTokens.pageGutter,
-    padding: 20,
-    borderRadius: CARD_RADIUS,
-    borderWidth: 1,
-    borderColor: homeTokens.borderSoft,
-    backgroundColor: homeTokens.cardBg,
-  },
-  messageTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: homeTokens.charcoal,
-  },
-  messageText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: 'rgba(45,55,72,0.9)',
-    marginTop: 6,
-  },
-  scrollTopFab: {
-    position: 'absolute',
-    right: 16,
-    bottom: 32,
-    zIndex: 100,
-  },
-  scrollTopBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 999,
-    backgroundColor: 'rgba(229,224,229,0.90)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  scrollTopBtnPressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.95 }],
-  },
-});

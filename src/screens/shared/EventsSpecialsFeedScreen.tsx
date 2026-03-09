@@ -1,16 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Animated,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  View,
-  type ListRenderItem,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { FlatList, View, type ListRenderItem, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { EventSpecialListItemDto, EventsAndSpecialsResponseDto } from '@sayso/contracts';
 import { apiFetch } from '../../lib/api';
@@ -21,6 +10,9 @@ import { Text } from '../../components/Typography';
 import { FeedFooter } from '../../components/feed/FeedFooter';
 import { LoadMoreButton } from '../../components/feed/LoadMoreButton';
 import { useGlobalScrollToTop } from '../../hooks/useGlobalScrollToTop';
+import { useRealtimeQueryInvalidation } from '../../hooks/useRealtimeQueryInvalidation';
+import { TransitionItem } from '../../components/motion/TransitionItem';
+import { EventsSpecialsFeedView, eventsSpecialsFeedStyles as s, type ListItem } from './events-specials-feed/EventsSpecialsFeedView';
 
 const REQUEST_LIMIT = 20;
 const VISIBLE_CHUNK_SIZE = 12;
@@ -28,8 +20,14 @@ const BACK_TO_TOP_THRESHOLD = 900;
 const EVENT_FEED_SCROLL_OFFSETS = new Map<string, number>();
 const EMPTY_ITEMS: EventSpecialListItemDto[] = [];
 
-function ItemSeparator() {
-  return <View style={styles.separator} />;
+type FilterType = 'all' | 'event' | 'special';
+
+function fetchEventsPage(cursor: string | null, filterType: FilterType) {
+  const params = new URLSearchParams();
+  params.set('limit', String(REQUEST_LIMIT));
+  if (cursor) params.set('cursor', cursor);
+  if (filterType !== 'all') params.set('type', filterType);
+  return apiFetch<EventsAndSpecialsResponseDto>(`/api/events-and-specials?${params.toString()}`);
 }
 
 type Props = {
@@ -37,89 +35,140 @@ type Props = {
   onScrollY?: (y: number) => void;
 };
 
-function fetchEventsPage(cursor: string | null) {
-  const params = new URLSearchParams();
-  params.set('limit', String(REQUEST_LIMIT));
-  if (cursor) {
-    params.set('cursor', cursor);
-  }
-
-  return apiFetch<EventsAndSpecialsResponseDto>(`/api/events-and-specials?${params.toString()}`);
-}
-
 export function EventsSpecialsFeedScreen({ subtitle, onScrollY }: Props) {
-  const listRef = useRef<FlatList<EventSpecialListItemDto>>(null);
+  const listRef = useRef<FlatList<ListItem>>(null);
   const hasRestoredScrollRef = useRef(false);
   const initialOffset = EVENT_FEED_SCROLL_OFFSETS.get('events-specials') ?? 0;
+
+  const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [showScrollTopButton, setShowScrollTopButton] = useState(initialOffset > BACK_TO_TOP_THRESHOLD);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(VISIBLE_CHUNK_SIZE);
+
+  const realtimeTargets = useMemo(
+    () => [
+      {
+        key: 'events-feed-events-and-specials',
+        table: 'events_and_specials',
+        queryKeys: [['events-specials-feed'], ['events-specials-preview']],
+      },
+      {
+        key: 'events-feed-reviews',
+        table: 'reviews',
+        queryKeys: [['events-specials-feed'], ['events-specials-preview']],
+      },
+    ],
+    []
+  );
+
+  useRealtimeQueryInvalidation(realtimeTargets);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(searchQuery.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    setVisibleCount(VISIBLE_CHUNK_SIZE);
+    setLoadMoreError(null);
+  }, [selectedFilter, debouncedQuery]);
 
   const handleScrollToTop = useCallback(() => {
     listRef.current?.scrollToOffset({ offset: 0, animated: true });
   }, []);
 
-  useGlobalScrollToTop({
-    visible: showScrollTopButton,
-    enabled: true,
-    onScrollToTop: handleScrollToTop,
-  });
-
-  const fabAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.spring(fabAnim, {
-      toValue: showScrollTopButton ? 1 : 0,
-      damping: 18,
-      stiffness: 260,
-      useNativeDriver: true,
-    }).start();
-  }, [showScrollTopButton, fabAnim]);
+  useGlobalScrollToTop({ visible: showScrollTopButton, enabled: true, onScrollToTop: handleScrollToTop });
 
   const query = useInfiniteQuery({
-    queryKey: ['events-specials-feed', REQUEST_LIMIT],
+    queryKey: ['events-specials-feed', REQUEST_LIMIT, selectedFilter],
     initialPageParam: null as string | null,
-    queryFn: ({ pageParam }) => fetchEventsPage(pageParam),
+    queryFn: ({ pageParam }) => fetchEventsPage(pageParam, selectedFilter),
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     staleTime: 30_000,
   });
 
   const items = useMemo(
-    () => query.data?.pages.flatMap((page) => page.items ?? EMPTY_ITEMS) ?? EMPTY_ITEMS,
+    () => query.data?.pages.flatMap((p) => p.items ?? EMPTY_ITEMS) ?? EMPTY_ITEMS,
     [query.data]
   );
-  const visibleItems = useMemo(() => items.slice(0, visibleCount), [items, visibleCount]);
+
+  const filteredItems = useMemo(() => {
+    if (!debouncedQuery) return items;
+    const q = debouncedQuery.toLowerCase();
+    return items.filter((item) => {
+      const text = `${item.title ?? ''} ${(item as any).location ?? ''} ${item.description ?? ''}`.toLowerCase();
+      return text.includes(q);
+    });
+  }, [items, debouncedQuery]);
+
+  const visibleItems = useMemo(() => filteredItems.slice(0, visibleCount), [filteredItems, visibleCount]);
   const hasNextPage = Boolean(query.hasNextPage);
-  const hasBufferedItems = items.length > visibleCount;
+  const hasBufferedItems = filteredItems.length > visibleCount;
 
-  useEffect(() => {
-    setVisibleCount(VISIBLE_CHUNK_SIZE);
-    setLoadMoreError(null);
-  }, []);
-
-  useEffect(() => {
-    if (hasRestoredScrollRef.current || initialOffset <= 0 || visibleItems.length === 0) {
-      return;
+  const listData = useMemo((): ListItem[] => {
+    if (selectedFilter !== 'all') return visibleItems;
+    const events = visibleItems.filter((i) => i.type === 'event');
+    const specials = visibleItems.filter((i) => i.type === 'special');
+    const result: ListItem[] = [];
+    if (events.length > 0) {
+      result.push({ _section: true, title: 'Events', id: 'h-events' });
+      result.push(...events);
     }
+    if (specials.length > 0) {
+      result.push({ _section: true, title: 'Specials', id: 'h-specials' });
+      result.push(...specials);
+    }
+    return result;
+  }, [visibleItems, selectedFilter]);
 
+  const countText = useMemo(() => {
+    const ev = filteredItems.filter((i) => i.type === 'event').length;
+    const sp = filteredItems.filter((i) => i.type === 'special').length;
+    if (selectedFilter === 'event') return `${ev} event${ev !== 1 ? 's' : ''}`;
+    if (selectedFilter === 'special') return `${sp} special${sp !== 1 ? 's' : ''}`;
+    if (ev > 0 && sp > 0) return `${ev} event${ev !== 1 ? 's' : ''} · ${sp} special${sp !== 1 ? 's' : ''}`;
+    if (ev > 0) return `${ev} event${ev !== 1 ? 's' : ''}`;
+    if (sp > 0) return `${sp} special${sp !== 1 ? 's' : ''}`;
+    return '';
+  }, [filteredItems, selectedFilter]);
+
+  useEffect(() => {
+    if (hasRestoredScrollRef.current || initialOffset <= 0 || listData.length === 0) return;
     hasRestoredScrollRef.current = true;
     requestAnimationFrame(() => {
       listRef.current?.scrollToOffset({ offset: initialOffset, animated: false });
     });
-  }, [initialOffset, visibleItems.length]);
+  }, [initialOffset, listData.length]);
 
   useEffect(() => {
-    if (!hasNextPage && !hasBufferedItems) {
-      setLoadMoreError(null);
-    }
+    if (!hasNextPage && !hasBufferedItems) setLoadMoreError(null);
   }, [hasBufferedItems, hasNextPage]);
 
-  const keyExtractor = useCallback((item: EventSpecialListItemDto) => `${item.type}:${item.id}`, []);
-
-  const renderItem = useCallback<ListRenderItem<EventSpecialListItemDto>>(
-    ({ item }) => <EventCard item={item} />,
+  const keyExtractor = useCallback(
+    (item: ListItem) => ('_section' in item ? item.id : `${item.type}:${item.id}`),
     []
   );
+
+  const renderItem = useCallback<ListRenderItem<ListItem>>(({ item, index }) => {
+    if ('_section' in item) {
+      return (
+        <TransitionItem variant="header" index={index} animate={index < VISIBLE_CHUNK_SIZE}>
+          <View style={[s.sectionHeader, index > 0 && s.sectionHeaderGap]}>
+            <Text style={s.sectionTitle}>{item.title}</Text>
+          </View>
+        </TransitionItem>
+      );
+    }
+    return (
+      <TransitionItem variant="listItem" index={index} animate={index < VISIBLE_CHUNK_SIZE}>
+        <View style={s.cardWrap}>
+          <EventCard item={item} />
+        </View>
+      </TransitionItem>
+    );
+  }, []);
 
   const handleRefresh = useCallback(() => {
     setLoadMoreError(null);
@@ -129,195 +178,121 @@ export function EventsSpecialsFeedScreen({ subtitle, onScrollY }: Props) {
 
   const handleLoadMore = useCallback(async () => {
     if (hasBufferedItems) {
-      setVisibleCount((current) => Math.min(current + VISIBLE_CHUNK_SIZE, items.length));
+      setVisibleCount((c) => Math.min(c + VISIBLE_CHUNK_SIZE, filteredItems.length));
       return;
     }
-
-    if (query.isFetchingNextPage || !hasNextPage) {
-      return;
-    }
-
+    if (query.isFetchingNextPage || !hasNextPage) return;
     setLoadMoreError(null);
     const result = await query.fetchNextPage();
     if (result.isError) {
-      setLoadMoreError("Couldn't load more right now. Tap Load More to try again.");
+      setLoadMoreError("Couldn't load more right now. Tap to try again.");
       return;
     }
-
-    setVisibleCount((current) => current + VISIBLE_CHUNK_SIZE);
-  }, [hasBufferedItems, hasNextPage, items.length, query]);
+    setVisibleCount((c) => c + VISIBLE_CHUNK_SIZE);
+  }, [hasBufferedItems, hasNextPage, filteredItems.length, query]);
 
   const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const nextOffset = event.nativeEvent.contentOffset.y;
-    EVENT_FEED_SCROLL_OFFSETS.set('events-specials', nextOffset);
-    const shouldShow = nextOffset > BACK_TO_TOP_THRESHOLD;
-    setShowScrollTopButton((current) => (current === shouldShow ? current : shouldShow));
-    onScrollY?.(nextOffset);
+    const y = event.nativeEvent.contentOffset.y;
+    EVENT_FEED_SCROLL_OFFSETS.set('events-specials', y);
+    const shouldShow = y > BACK_TO_TOP_THRESHOLD;
+    setShowScrollTopButton((c) => (c === shouldShow ? c : shouldShow));
+    onScrollY?.(y);
   }, [onScrollY]);
 
-  const footer = useMemo(() => {
-    if (query.isFetchingNextPage) {
+  const listEmpty = useMemo(() => {
+    if (query.isLoading) {
       return (
-        <View style={styles.footerStack}>
-          {Array.from({ length: 5 }, (_, index) => (
-            <EventCardSkeleton key={`events-loading-${index}`} />
-          ))}
+        <View style={s.skeletonStack}>
+          {Array.from({ length: 5 }, (_, i) => <EventCardSkeleton key={i} />)}
         </View>
       );
     }
+    if (query.isError) {
+      return (
+        <EmptyState
+          icon="wifi-outline"
+          title="Couldn't load events & specials"
+          message="Pull to refresh and try again."
+        />
+      );
+    }
+    if (debouncedQuery && filteredItems.length === 0) {
+      return (
+        <EmptyState
+          icon="search-outline"
+          title={`No results for "${debouncedQuery}"`}
+          message="Try a different search term."
+        />
+      );
+    }
+    if (selectedFilter === 'event') {
+      return (
+        <EmptyState
+          icon="calendar-outline"
+          title="No events yet"
+          message="Check back soon for upcoming events."
+        />
+      );
+    }
+    if (selectedFilter === 'special') {
+      return (
+        <EmptyState
+          icon="pricetag-outline"
+          title="No specials yet"
+          message="Check back soon for exclusive deals."
+        />
+      );
+    }
+    return (
+      <EmptyState
+        icon="calendar-outline"
+        title="We're curating something special"
+        message="Business owners are adding events and specials. Check back soon."
+      />
+    );
+  }, [query.isLoading, query.isError, debouncedQuery, filteredItems.length, selectedFilter]);
 
+  const listFooter = useMemo(() => {
+    if (query.isFetchingNextPage) {
+      return (
+        <View style={s.skeletonStack}>
+          {Array.from({ length: 3 }, (_, i) => <EventCardSkeleton key={i} />)}
+        </View>
+      );
+    }
     if (hasBufferedItems || hasNextPage) {
       return (
-        <View style={styles.loadMoreWrap}>
-          {loadMoreError ? <Text style={styles.loadMoreError}>{loadMoreError}</Text> : null}
+        <View style={s.loadMoreWrap}>
+          {loadMoreError ? <Text style={s.loadMoreError}>{loadMoreError}</Text> : null}
           <LoadMoreButton onPress={() => void handleLoadMore()} />
         </View>
       );
     }
-
-    if (!hasNextPage && !hasBufferedItems && visibleItems.length > 0) {
-      return <FeedFooter />;
-    }
-
-    return <View style={styles.footerSpacer} />;
+    if (visibleItems.length > 0) return <FeedFooter />;
+    return <View style={s.spacer} />;
   }, [handleLoadMore, hasBufferedItems, hasNextPage, loadMoreError, query.isFetchingNextPage, visibleItems.length]);
 
-  const listHeader = (
-    <View style={styles.header}>
-      <Text style={styles.subtitle}>{subtitle}</Text>
-    </View>
-  );
-
-  const listEmpty = query.isLoading ? (
-    <View style={styles.footerStack}>
-      {Array.from({ length: 5 }, (_, index) => (
-        <EventCardSkeleton key={`events-initial-${index}`} />
-      ))}
-    </View>
-  ) : query.isError ? (
-    <EmptyState icon="wifi-outline" title="Couldn't load events & specials" message="Pull to refresh and try again." />
-  ) : (
-    <EmptyState
-      icon="calendar-outline"
-      title="No events & specials yet"
-      message="Check back shortly for fresh listings."
+  return (
+    <EventsSpecialsFeedView
+      listRef={listRef}
+      listData={listData}
+      queryLoading={query.isLoading}
+      keyExtractor={keyExtractor}
+      renderItem={renderItem}
+      subtitle={subtitle}
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
+      selectedFilter={selectedFilter}
+      onFilterChange={setSelectedFilter}
+      showCount={!query.isLoading && items.length > 0 && !debouncedQuery}
+      countText={countText}
+      debouncedQuery={debouncedQuery}
+      filteredCount={filteredItems.length}
+      listEmpty={listEmpty}
+      listFooter={listFooter}
+      isRefreshing={query.isRefetching && !query.isFetchingNextPage}
+      onRefresh={handleRefresh}
+      onScroll={handleScroll}
     />
   );
-
-  return (
-    <View style={styles.container}>
-      <FlatList
-        ref={listRef}
-        data={query.isLoading ? EMPTY_ITEMS : visibleItems}
-        keyExtractor={keyExtractor}
-        renderItem={renderItem}
-        ItemSeparatorComponent={ItemSeparator}
-        ListHeaderComponent={listHeader}
-        ListEmptyComponent={listEmpty}
-        ListFooterComponent={footer}
-        contentContainerStyle={styles.list}
-        refreshControl={
-          <RefreshControl
-            refreshing={query.isRefetching && !query.isFetchingNextPage}
-            onRefresh={handleRefresh}
-          />
-        }
-        initialNumToRender={8}
-        windowSize={5}
-        removeClippedSubviews
-        maxToRenderPerBatch={10}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        showsVerticalScrollIndicator={false}
-      />
-
-      {/* Scroll-to-top FAB */}
-      <Animated.View
-        style={[
-          styles.scrollTopFab,
-          {
-            opacity: fabAnim,
-            transform: [{ scale: fabAnim.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) }],
-          },
-        ]}
-        pointerEvents={showScrollTopButton ? 'box-none' : 'none'}
-      >
-        <Pressable
-          style={({ pressed }) => [styles.scrollTopBtn, pressed && styles.scrollTopBtnPressed]}
-          onPress={handleScrollToTop}
-          accessibilityRole="button"
-          accessibilityLabel="Scroll to top"
-        >
-          <Ionicons name="chevron-up" size={20} color="#2D3748" />
-        </Pressable>
-      </Animated.View>
-    </View>
-  );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  list: {
-    flexGrow: 1,
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 16,
-  },
-  header: {
-    paddingTop: 12,
-    paddingBottom: 14,
-  },
-  subtitle: {
-    fontSize: 15,
-    lineHeight: 21,
-    color: '#4B5563',
-  },
-  separator: {
-    height: 12,
-  },
-  footerStack: {
-    gap: 12,
-    paddingTop: 12,
-  },
-  loadMoreWrap: {
-    paddingTop: 4,
-    paddingBottom: 8,
-    gap: 6,
-  },
-  loadMoreError: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: '#6B7280',
-    textAlign: 'center',
-    paddingHorizontal: 12,
-  },
-  footerSpacer: {
-    height: 12,
-  },
-  scrollTopFab: {
-    position: 'absolute',
-    right: 16,
-    bottom: 32,
-    zIndex: 100,
-  },
-  scrollTopBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 999,
-    backgroundColor: 'rgba(229,224,229,0.90)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  scrollTopBtnPressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.95 }],
-  },
-});
-

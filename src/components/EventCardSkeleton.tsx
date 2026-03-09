@@ -1,51 +1,42 @@
-import { useEffect, useRef } from 'react';
-import { Animated, Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { CardSurface } from './CardSurface';
-import { CARD_RADIUS } from '../styles/radii';
+import { CARD_CTA_RADIUS, CARD_RADIUS } from '../styles/radii';
+import { SkeletonBlock } from './SkeletonBlock';
 
 type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
 export function EventCardSkeleton({ style }: Props) {
-  const opacity = useRef(new Animated.Value(0.4)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 1, duration: 700, useNativeDriver: Platform.OS !== 'web' }),
-        Animated.timing(opacity, { toValue: 0.4, duration: 700, useNativeDriver: Platform.OS !== 'web' }),
-      ])
-    ).start();
-  }, [opacity]);
-
   return (
-    <Animated.View style={[style, { opacity }]}>
-      <CardSurface radius={CARD_RADIUS}>
-        <View style={styles.media}>
-          <View style={styles.ribbon} />
-          <View style={styles.ratingBadge} />
-        </View>
+    <View style={style}>
+      <CardSurface radius={CARD_RADIUS} material="frosted" contentStyle={styles.frostedSurface}>
+        <SkeletonBlock style={styles.media} variant="strong">
+          <SkeletonBlock style={styles.ribbon} variant="soft" />
+          <SkeletonBlock style={styles.ratingBadge} />
+        </SkeletonBlock>
         <View style={styles.body}>
-          <View style={styles.title} />
-          <View style={styles.descriptionLineLarge} />
-          <View style={styles.descriptionLineSmall} />
+          <SkeletonBlock style={styles.title} />
+          <SkeletonBlock style={styles.descriptionLineLarge} />
+          <SkeletonBlock style={styles.descriptionLineSmall} />
           <View style={styles.pillRow}>
-            <View style={styles.pill} />
-            <View style={styles.pillShort} />
+            <SkeletonBlock style={styles.pill} />
+            <SkeletonBlock style={styles.pillShort} />
           </View>
-          <View style={styles.reviewCount} />
-          <View style={styles.cta} />
+          <SkeletonBlock style={styles.reviewCount} />
+          <SkeletonBlock style={styles.cta} variant="strong" />
         </View>
       </CardSurface>
-    </Animated.View>
+    </View>
   );
 }
-
 const styles = StyleSheet.create({
+  frostedSurface: {
+    backgroundColor: 'rgba(157,171,155,0.72)',
+    borderColor: 'rgba(255,255,255,0.34)',
+  },
   media: {
     height: 220,
-    backgroundColor: '#E2E8F0',
   },
   ribbon: {
     position: 'absolute',
@@ -54,7 +45,6 @@ const styles = StyleSheet.create({
     width: 180,
     height: 28,
     borderRadius: 8,
-    backgroundColor: 'rgba(114, 47, 55, 0.2)',
     transform: [{ rotate: '-44deg' }],
   },
   ratingBadge: {
@@ -64,30 +54,29 @@ const styles = StyleSheet.create({
     width: 52,
     height: 28,
     borderRadius: 999,
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
   },
   body: {
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 14,
+    backgroundColor: 'rgba(157,171,155,0.32)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.34)',
   },
   title: {
     height: 18,
     borderRadius: 8,
-    backgroundColor: '#E2E8F0',
     width: '76%',
   },
   descriptionLineLarge: {
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#E2E8F0',
     width: '100%',
     marginTop: 9,
   },
   descriptionLineSmall: {
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#E2E8F0',
     width: '72%',
     marginTop: 7,
   },
@@ -100,26 +89,22 @@ const styles = StyleSheet.create({
     width: 118,
     height: 28,
     borderRadius: 999,
-    backgroundColor: '#E2E8F0',
   },
   pillShort: {
     width: 86,
     height: 28,
     borderRadius: 999,
-    backgroundColor: '#E2E8F0',
   },
   reviewCount: {
     width: 92,
     height: 14,
     borderRadius: 7,
-    backgroundColor: '#E2E8F0',
     alignSelf: 'center',
     marginTop: 12,
   },
   cta: {
-    height: 46,
-    borderRadius: 999,
-    backgroundColor: '#E2E8F0',
+    minHeight: 46,
+    borderRadius: CARD_CTA_RADIUS,
     marginTop: 12,
   },
 });

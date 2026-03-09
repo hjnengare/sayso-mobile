@@ -39,8 +39,10 @@ export function BusinessPageHeader({
   const [menuAnchor, setMenuAnchor] = useState<MenuAnchor | null>(null);
   const logoTriggerRef = useRef<View | null>(null);
   const foregroundColor = collapsed ? businessDetailColors.white : 'rgba(45,45,45,0.88)';
-  const backButtonBg = collapsed ? 'rgba(255,255,255,0.14)' : 'rgba(229,224,229,0.9)';
-  const backButtonBorder = collapsed ? 'rgba(255,255,255,0.24)' : 'rgba(45,55,72,0.18)';
+  const backButtonBg = collapsed ? 'rgba(255,255,255,0.14)' : '#FFFFFF';
+  const backButtonBorder = collapsed ? 'rgba(255,255,255,0.24)' : '#E5E7EB';
+  const actionButtonBg = collapsed ? 'rgba(255,255,255,0.14)' : '#FFFFFF';
+  const actionButtonBorder = collapsed ? 'rgba(255,255,255,0.24)' : '#E5E7EB';
 
   const handleSelectMenuItem = (item: BusinessHeaderMenuItem) => {
     setMenuVisible(false);
@@ -92,7 +94,7 @@ export function BusinessPageHeader({
             onPress={onPressBack}
             accessibilityLabel="Go back"
           >
-            <Ionicons name="chevron-back" size={20} color={foregroundColor} />
+            <Ionicons name="chevron-back" size={22} color={foregroundColor} />
           </Pressable>
         </View>
 
@@ -118,18 +120,18 @@ export function BusinessPageHeader({
 
         <View style={styles.rightSlot}>
           <Pressable
-            style={styles.iconButton}
-            onPress={onPressNotifications}
-            accessibilityLabel="Notifications"
-          >
-            <Ionicons name="notifications-outline" size={18} color={foregroundColor} />
-          </Pressable>
-          <Pressable
-            style={styles.iconButton}
+            style={[styles.iconButton, { backgroundColor: actionButtonBg, borderColor: actionButtonBorder }]}
             onPress={onPressMessages}
             accessibilityLabel="Messages"
           >
-            <Ionicons name="chatbubble-outline" size={18} color={foregroundColor} />
+            <Ionicons name="chatbubble" size={22} color={foregroundColor} />
+          </Pressable>
+          <Pressable
+            style={[styles.iconButton, { backgroundColor: actionButtonBg, borderColor: actionButtonBorder }]}
+            onPress={onPressNotifications}
+            accessibilityLabel="Notifications"
+          >
+            <Ionicons name="notifications" size={22} color={foregroundColor} />
           </Pressable>
         </View>
       </View>
@@ -166,7 +168,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   leftSlot: {
-    width: 84,
+    width: 92,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
@@ -177,7 +179,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rightSlot: {
-    width: 84,
+    width: 92,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
@@ -190,26 +192,30 @@ const styles = StyleSheet.create({
   },
   logoText: {
     fontSize: 28,
-    lineHeight: 28,
+    lineHeight: 32,
     fontFamily: 'MonarchParadox',
     letterSpacing: 0.2,
     textTransform: 'none',
   },
   backButton: {
-    width: 30,
-    height: 30,
+    width: 40,
+    height: 40,
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(229,224,229,0.9)',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(45,55,72,0.18)',
+    borderColor: '#E5E7EB',
   },
   iconButton: {
-    width: 24,
-    height: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
   },
   menuBackdrop: {
     flex: 1,

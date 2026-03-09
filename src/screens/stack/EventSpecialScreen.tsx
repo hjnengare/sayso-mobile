@@ -1,19 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
-  Easing,
+  InteractionManager,
   NativeScrollEvent,
   NativeSyntheticEvent,
-  Pressable,
   SafeAreaView,
   ScrollView,
-  StyleSheet,
   View,
-  type StyleProp,
-  type ViewStyle,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { EmptyState } from '../../components/EmptyState';
 import {
@@ -30,60 +25,24 @@ import {
   EventSpecialSkeleton,
   type EventSpecialHeaderMenuItem,
 } from '../../components/event-detail';
-import { businessDetailColors, businessDetailSpacing } from '../../components/business-detail/styles';
+import { businessDetailColors } from '../../components/business-detail/styles';
 import { useEventReminder } from '../../hooks/useEventReminder';
 import { useEventRatings } from '../../hooks/useEventRatings';
 import { useEventReviews } from '../../hooks/useEventReviews';
 import { useEventRsvp } from '../../hooks/useEventRsvp';
 import { useEventSpecialDetail } from '../../hooks/useEventSpecialDetail';
 import { useGlobalScrollToTop } from '../../hooks/useGlobalScrollToTop';
+import { useRealtimeQueryInvalidation } from '../../hooks/useRealtimeQueryInvalidation';
 import { useRelatedEventSpecials } from '../../hooks/useRelatedEventSpecials';
+import { TransitionItem } from '../../components/motion/TransitionItem';
 import { useAuthSession } from '../../hooks/useSession';
+import { markFirstContentful, markInteractive } from '../../lib/perf/perfMarkers';
 import { routes } from '../../navigation/routes';
+import { styles } from './event-special-screen/eventSpecialScreenStyles';
 
 type Props = {
   routeType: 'event' | 'special';
 };
-
-type RevealBlockProps = {
-  children: ReactNode;
-  delay?: number;
-  style?: StyleProp<ViewStyle>;
-};
-
-function RevealBlock({ children, delay = 0, style }: RevealBlockProps) {
-  const anim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      Animated.timing(anim, {
-        toValue: 1,
-        duration: 440,
-        easing: Easing.out(Easing.back(1.08)),
-        useNativeDriver: true,
-      }).start();
-    }, delay);
-
-    return () => {
-      clearTimeout(timer);
-      anim.stopAnimation();
-    };
-  }, [anim, delay]);
-
-  return (
-    <Animated.View
-      style={[
-        style,
-        {
-          opacity: anim,
-          transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }],
-        },
-      ]}
-    >
-      {children}
-    </Animated.View>
-  );
-}
 
 function isUnauthorizedError(message: string | null) {
   return Boolean(message && /HTTP\s+401/.test(message));
@@ -97,6 +56,14 @@ export default function EventSpecialScreen({ routeType }: Props) {
   const detailQuery = useEventSpecialDetail(id);
   const item = detailQuery.data;
 
+  useEffect(() => {
+    if (item && !detailQuery.isLoading) {
+      const markerKey = `event-special:${item.id}`;
+      markFirstContentful(markerKey);
+      markInteractive(markerKey);
+    }
+  }, [detailQuery.isLoading, item]);
+
   const ratings = useEventRatings(
     id,
     item?.rating != null ? Number(item.rating) : 0,
@@ -107,12 +74,48 @@ export default function EventSpecialScreen({ routeType }: Props) {
   const rsvp = useEventRsvp(id);
   const reminder = useEventReminder(id);
 
+  const realtimeTargets = useMemo(
+    () => [
+      {
+        key: `event-special-detail-${id}`,
+        table: 'events_and_specials',
+        filter: `id=eq.${id}`,
+        queryKeys: [['event-special-detail', id], ['event-related', id]],
+        enabled: Boolean(id),
+      },
+      {
+        key: `event-special-reviews-${id}`,
+        table: 'reviews',
+        filter: `event_id=eq.${id}`,
+        queryKeys: [['event-ratings', id], ['event-special-detail', id]],
+        enabled: Boolean(id),
+      },
+    ],
+    [id]
+  );
+
+  useRealtimeQueryInvalidation(realtimeTargets);
+
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const headerCollapsedRef = useRef(false);
   const headerProgress = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView | null>(null);
   const scrollTopVisibleRef = useRef(false);
   const [showScrollTopButton, setShowScrollTopButton] = useState(false);
+  const [showDeferredSections, setShowDeferredSections] = useState(false);
+
+  useEffect(() => {
+    setShowDeferredSections(false);
+    const task = InteractionManager.runAfterInteractions(() => {
+      requestAnimationFrame(() => {
+        setShowDeferredSections(true);
+      });
+    });
+
+    return () => {
+      task.cancel();
+    };
+  }, [item?.id]);
 
   const setScrollTopVisible = useCallback((visible: boolean) => {
     if (scrollTopVisibleRef.current === visible) return;
@@ -129,17 +132,6 @@ export default function EventSpecialScreen({ routeType }: Props) {
     enabled: true,
     onScrollToTop: handleScrollToTop,
   });
-
-  const fabAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.spring(fabAnim, {
-      toValue: showScrollTopButton ? 1 : 0,
-      damping: 18,
-      stiffness: 260,
-      useNativeDriver: true,
-    }).start();
-  }, [showScrollTopButton, fabAnim]);
 
   const setHeaderState = useCallback(
     (collapsed: boolean) => {
@@ -197,7 +189,7 @@ export default function EventSpecialScreen({ routeType }: Props) {
 
   const handlePressGoing = async () => {
     if (!user) {
-      router.push(routes.login() as never);
+      router.push(routes.onboarding() as never);
       return;
     }
 
@@ -206,7 +198,7 @@ export default function EventSpecialScreen({ routeType }: Props) {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to update RSVP right now.';
       if (isUnauthorizedError(message)) {
-        router.push(routes.login() as never);
+        router.push(routes.onboarding() as never);
         return;
       }
       Alert.alert('RSVP unavailable', message);
@@ -215,7 +207,7 @@ export default function EventSpecialScreen({ routeType }: Props) {
 
   const handlePressReminder = async (option: '1_day' | '2_hours') => {
     if (!user) {
-      router.push(routes.login() as never);
+      router.push(routes.onboarding() as never);
       return;
     }
 
@@ -235,7 +227,7 @@ export default function EventSpecialScreen({ routeType }: Props) {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to update reminder right now.';
       if (isUnauthorizedError(message)) {
-        router.push(routes.login() as never);
+        router.push(routes.onboarding() as never);
         return;
       }
       Alert.alert('Reminder unavailable', message);
@@ -325,155 +317,93 @@ export default function EventSpecialScreen({ routeType }: Props) {
         scrollEventThrottle={16}
       >
         <View style={styles.mainColumn}>
-          <RevealBlock delay={0}>
+          <TransitionItem variant="card" index={0}>
             <EventSpecialHero item={item} rating={effectiveRating} />
-          </RevealBlock>
+          </TransitionItem>
 
-          <RevealBlock delay={60}>
+          <TransitionItem variant="card" index={1}>
             <EventSpecialInfoBlock
               title={item.title}
               rating={effectiveRating}
               location={item.location}
               type={item.type}
             />
-          </RevealBlock>
+          </TransitionItem>
 
-          <RevealBlock delay={120}>
+          <TransitionItem variant="card" index={2}>
             <EventSpecialDescriptionCard
               description={item.description}
               title={item.type === 'special' ? 'About This Special' : 'About This Event'}
             />
-          </RevealBlock>
+          </TransitionItem>
 
-          <RevealBlock delay={180}>
+          <TransitionItem variant="card" index={3}>
             <EventSpecialDetailsCard item={item} />
-          </RevealBlock>
+          </TransitionItem>
         </View>
 
-        <RevealBlock delay={240}>
-          <EventSpecialRelatedSection
-            title={item.type === 'special' ? 'More Specials Near You' : 'More Events Near You'}
-            items={related.items}
-            isLoading={related.isLoading}
-            error={related.error}
-          />
-        </RevealBlock>
+        {showDeferredSections ? (
+          <>
+            <TransitionItem variant="card" index={4}>
+              <EventSpecialRelatedSection
+                title={item.type === 'special' ? 'More Specials Near You' : 'More Events Near You'}
+                items={related.items}
+                isLoading={related.isLoading}
+                error={related.error}
+              />
+            </TransitionItem>
 
-        <View style={styles.mainColumn}>
-          <RevealBlock delay={300}>
-            <EventSpecialMoreDatesCard
-              currentStartISO={item.startDateISO}
-              currentEndISO={item.endDateISO}
-              occurrences={item.occurrencesList}
-              onPressDate={(occurrenceId) => {
-                const target = item.type === 'special' ? routes.specialDetail(occurrenceId) : routes.eventDetail(occurrenceId);
-                router.push(target as never);
-              }}
-            />
-          </RevealBlock>
+            <View style={styles.mainColumn}>
+              <TransitionItem variant="card" index={5}>
+                <EventSpecialMoreDatesCard
+                  currentStartISO={item.startDateISO}
+                  currentEndISO={item.endDateISO}
+                  occurrences={item.occurrencesList}
+                  onPressDate={(occurrenceId) => {
+                    const target = item.type === 'special' ? routes.specialDetail(occurrenceId) : routes.eventDetail(occurrenceId);
+                    router.push(target as never);
+                  }}
+                />
+              </TransitionItem>
 
-          <RevealBlock delay={360}>
-            <EventSpecialActionCard
-              item={item}
-              routeType={routeType}
-              isGoing={rsvp.isGoing}
-              rsvpCount={rsvp.count}
-              rsvpBusy={rsvp.isToggling}
-              reminderBusy={reminder.isMutating}
-              hasReminder1Day={reminder.hasReminder('1_day')}
-              hasReminder2Hours={reminder.hasReminder('2_hours')}
-              onPressGoing={() => void handlePressGoing()}
-              onPressReminder={(option) => void handlePressReminder(option)}
-              onPressWriteReview={handlePressWriteReview}
-            />
-          </RevealBlock>
+              <TransitionItem variant="card" index={6}>
+                <EventSpecialActionCard
+                  item={item}
+                  routeType={routeType}
+                  isGoing={rsvp.isGoing}
+                  rsvpCount={rsvp.count}
+                  rsvpBusy={rsvp.isToggling}
+                  reminderBusy={reminder.isMutating}
+                  hasReminder1Day={reminder.hasReminder('1_day')}
+                  hasReminder2Hours={reminder.hasReminder('2_hours')}
+                  onPressGoing={() => void handlePressGoing()}
+                  onPressReminder={(option) => void handlePressReminder(option)}
+                  onPressWriteReview={handlePressWriteReview}
+                />
+              </TransitionItem>
 
-          <RevealBlock delay={420}>
-            <EventSpecialContactInfoCard item={item} />
-          </RevealBlock>
-        </View>
+              <TransitionItem variant="card" index={7}>
+                <EventSpecialContactInfoCard item={item} />
+              </TransitionItem>
+            </View>
 
-        <RevealBlock delay={480}>
-          <EventSpecialReviewsSection
-            title={item.type === 'special' ? 'Special Reviews' : 'Event Reviews'}
-            reviews={reviews.reviews}
-            isLoading={reviews.isLoading}
-            error={reviews.error}
-            onPressWriteReview={handlePressWriteReview}
-          />
-        </RevealBlock>
+            <TransitionItem variant="card" index={8}>
+              <EventSpecialReviewsSection
+                title={item.type === 'special' ? 'Special Reviews' : 'Event Reviews'}
+                targetId={id ?? item.id}
+                reviews={reviews.reviews}
+                isLoading={reviews.isLoading}
+                error={reviews.error}
+                onRefresh={() => {
+                  void reviews.refetch();
+                }}
+                onPressWriteReview={handlePressWriteReview}
+              />
+            </TransitionItem>
+          </>
+        ) : null}
       </ScrollView>
 
-      {/* Scroll-to-top FAB */}
-      <Animated.View
-        style={[
-          styles.scrollTopFab,
-          {
-            opacity: fabAnim,
-            transform: [{ scale: fabAnim.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) }],
-          },
-        ]}
-        pointerEvents={showScrollTopButton ? 'box-none' : 'none'}
-      >
-        <Pressable
-          style={({ pressed }) => [styles.scrollTopBtn, pressed && styles.scrollTopBtnPressed]}
-          onPress={handleScrollToTop}
-          accessibilityRole="button"
-          accessibilityLabel="Scroll to top"
-        >
-          <Ionicons name="chevron-up" size={20} color="#2D3748" />
-        </Pressable>
-      </Animated.View>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: businessDetailColors.page,
-  },
-  stickyHeader: {
-    paddingHorizontal: businessDetailSpacing.pageGutter,
-    paddingTop: 10,
-    paddingBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 8,
-  },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    paddingTop: 6,
-    paddingBottom: 26,
-    gap: 16,
-  },
-  mainColumn: {
-    marginHorizontal: businessDetailSpacing.pageGutter,
-    gap: 14,
-  },
-  scrollTopFab: {
-    position: 'absolute',
-    right: 16,
-    bottom: 32,
-    zIndex: 100,
-  },
-  scrollTopBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 999,
-    backgroundColor: 'rgba(229,224,229,0.90)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  scrollTopBtnPressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.95 }],
-  },
-});

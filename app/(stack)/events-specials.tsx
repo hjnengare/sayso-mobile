@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { SafeAreaView, StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
 import { useNavigation } from 'expo-router';
@@ -10,13 +10,17 @@ const SCROLL_COLOR_THRESHOLD = 60;
 
 export default function EventsSpecialsRoute() {
   const navigation = useNavigation();
+  const headerCollapsedRef = useRef(false);
 
   const handleScrollY = useCallback((y: number) => {
+    const collapsed = y > SCROLL_COLOR_THRESHOLD;
+    if (collapsed === headerCollapsedRef.current) return;
+    headerCollapsedRef.current = collapsed;
     navigation.setOptions({
       headerStyle: {
-        backgroundColor: y > SCROLL_COLOR_THRESHOLD ? NAVBAR_BG : homeTokens.offWhite,
+        backgroundColor: collapsed ? NAVBAR_BG : homeTokens.offWhite,
       },
-      headerTintColor: y > SCROLL_COLOR_THRESHOLD ? '#FFFFFF' : homeTokens.charcoal,
+      headerTintColor: collapsed ? '#FFFFFF' : homeTokens.charcoal,
     });
   }, [navigation]);
 

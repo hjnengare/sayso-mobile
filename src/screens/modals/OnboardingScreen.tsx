@@ -3,7 +3,6 @@ import {
   Animated,
   Pressable,
   StyleSheet,
-  Text as RNText,
   View,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
@@ -106,7 +105,7 @@ export default function OnboardingScreen() {
   }, []);
 
   const handleGetStarted = () => {
-    router.replace(routes.home() as never);
+    router.replace(('/home?guest=true') as never);
   };
 
   const handleSignUp = () => {
@@ -134,7 +133,7 @@ export default function OnboardingScreen() {
 
         {/* Logo wordmark — zoom scale-up */}
         <Animated.View style={[styles.logoWrap, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}>
-          <RNText style={styles.logoText}>sayso</RNText>
+          <Text style={styles.logoText}>Sayso</Text>
         </Animated.View>
 
         {/* Title — slide-up + scale */}
@@ -207,10 +206,11 @@ const styles = StyleSheet.create({
   logoWrap: { alignItems: 'center', marginBottom: 4 },
   logoText: {
     fontFamily: 'MonarchParadox',
-    fontSize: 72,
-    lineHeight: 72,
+    fontSize: 56,
+    lineHeight: 64,
     color: '#2D2D2D',
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
+    textTransform: 'none',
   },
 
   // Title
@@ -243,11 +243,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 24,
     alignItems: 'center',
-    shadowColor: '#722F37',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.28,
-    shadowRadius: 12,
-    elevation: 6,
   },
   getStartedBtnPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
   getStartedTxt: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },

@@ -48,7 +48,7 @@ export function useForYouBusinesses(limit = 20, enabled = true) {
       const response = await apiFetch<BusinessesResponse>(`/api/businesses?${params.toString()}`);
       return response.businesses ?? response.data ?? [];
     },
-    staleTime: 30_000,
+    staleTime: 90_000,
   });
 
   return {

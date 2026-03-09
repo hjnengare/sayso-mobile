@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { OnboardingLayout } from '../../components/onboarding/OnboardingLayout';
 import { Text } from '../../components/Typography';
 import { apiFetch } from '../../lib/api';
@@ -18,19 +19,19 @@ const SUBCATEGORY_MAP: Record<string, { groupLabel: string; items: Subcategory[]
     groupLabel: 'Food & Drink',
     items: [
       { id: 'restaurants', label: 'Restaurants' },
-      { id: 'cafes',       label: 'Cafes & Coffee' },
-      { id: 'bars',        label: 'Bars & Pubs' },
-      { id: 'fast-food',   label: 'Fast Food' },
+      { id: 'cafes', label: 'Cafés & Coffee' },
+      { id: 'bars', label: 'Bars & Pubs' },
+      { id: 'fast-food', label: 'Fast Food' },
       { id: 'fine-dining', label: 'Fine Dining' },
     ],
   },
   'beauty-wellness': {
     groupLabel: 'Beauty & Wellness',
     items: [
-      { id: 'gyms',        label: 'Gyms & Fitness' },
-      { id: 'spas',        label: 'Spas' },
-      { id: 'salons',      label: 'Hair Salons' },
-      { id: 'wellness',    label: 'Wellness Centers' },
+      { id: 'gyms', label: 'Gyms & Fitness' },
+      { id: 'spas', label: 'Spas' },
+      { id: 'salons', label: 'Hair Salons' },
+      { id: 'wellness', label: 'Wellness Centers' },
       { id: 'nail-salons', label: 'Nail Salons' },
     ],
   },
@@ -38,121 +39,171 @@ const SUBCATEGORY_MAP: Record<string, { groupLabel: string; items: Subcategory[]
     groupLabel: 'Professional Services',
     items: [
       { id: 'education-learning', label: 'Education & Learning' },
-      { id: 'finance-insurance',  label: 'Finance & Insurance' },
-      { id: 'plumbers',           label: 'Plumbers' },
-      { id: 'electricians',       label: 'Electricians' },
-      { id: 'legal-services',     label: 'Legal Services' },
+      { id: 'transport-travel', label: 'Transport & Travel' },
+      { id: 'finance-insurance', label: 'Finance & Insurance' },
+      { id: 'plumbers', label: 'Plumbers' },
+      { id: 'electricians', label: 'Electricians' },
+      { id: 'legal-services', label: 'Legal Services' },
     ],
   },
-  'travel': {
+  travel: {
     groupLabel: 'Travel',
     items: [
-      { id: 'accommodation',   label: 'Accommodation' },
-      { id: 'transport',       label: 'Transport' },
+      { id: 'accommodation', label: 'Accommodation' },
+      { id: 'transport', label: 'Transport' },
       { id: 'travel-services', label: 'Travel Services' },
     ],
   },
   'outdoors-adventure': {
     groupLabel: 'Outdoors & Adventure',
     items: [
-      { id: 'hiking',       label: 'Hiking' },
-      { id: 'cycling',      label: 'Cycling' },
+      { id: 'hiking', label: 'Hiking' },
+      { id: 'cycling', label: 'Cycling' },
       { id: 'water-sports', label: 'Water Sports' },
-      { id: 'camping',      label: 'Camping' },
+      { id: 'camping', label: 'Camping' },
     ],
   },
-  'entertainment-experiences': {
-    groupLabel: 'Entertainment',
+  'experiences-entertainment': {
+    groupLabel: 'Entertainment & Experiences',
     items: [
-      { id: 'events-festivals',  label: 'Events & Festivals' },
+      { id: 'events-festivals', label: 'Events & Festivals' },
       { id: 'sports-recreation', label: 'Sports & Recreation' },
-      { id: 'nightlife',         label: 'Nightlife' },
-      { id: 'comedy-clubs',      label: 'Comedy Clubs' },
-      { id: 'cinemas',           label: 'Cinemas' },
+      { id: 'nightlife', label: 'Nightlife' },
+      { id: 'comedy-clubs', label: 'Comedy Clubs' },
+      { id: 'cinemas', label: 'Cinemas' },
     ],
   },
   'arts-culture': {
     groupLabel: 'Arts & Culture',
     items: [
-      { id: 'museums',   label: 'Museums' },
+      { id: 'museums', label: 'Museums' },
       { id: 'galleries', label: 'Art Galleries' },
-      { id: 'theaters',  label: 'Theatres' },
-      { id: 'concerts',  label: 'Concerts' },
+      { id: 'theaters', label: 'Theaters' },
+      { id: 'concerts', label: 'Concerts' },
     ],
   },
   'family-pets': {
     groupLabel: 'Family & Pets',
     items: [
       { id: 'family-activities', label: 'Family Activities' },
-      { id: 'pet-services',      label: 'Pet Services' },
-      { id: 'childcare',         label: 'Childcare' },
-      { id: 'veterinarians',     label: 'Veterinarians' },
+      { id: 'pet-services', label: 'Pet Services' },
+      { id: 'childcare', label: 'Childcare' },
+      { id: 'veterinarians', label: 'Veterinarians' },
     ],
   },
   'shopping-lifestyle': {
     groupLabel: 'Shopping & Lifestyle',
     items: [
-      { id: 'fashion',    label: 'Fashion' },
-      { id: 'electronics',label: 'Electronics' },
-      { id: 'home-decor', label: 'Home & Decor' },
-      { id: 'books',      label: 'Books' },
+      { id: 'fashion', label: 'Fashion & Clothing' },
+      { id: 'electronics', label: 'Electronics' },
+      { id: 'home-decor', label: 'Home Decor' },
+      { id: 'books', label: 'Books & Media' },
     ],
   },
 };
 
-// Max number of groups we might ever show
 const MAX_GROUPS = Object.keys(SUBCATEGORY_MAP).length;
+
+type PreferenceDto = { id: string };
+type PreferencesResponseDto = {
+  interests?: PreferenceDto[];
+  subcategories?: PreferenceDto[];
+};
 
 export default function SubcategoriesScreen() {
   const router = useRouter();
   const [interestIds, setInterestIds] = useState<string[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // Counter entrance
   const counterOpacity = useRef(new Animated.Value(0)).current;
-  const counterY       = useRef(new Animated.Value(14)).current;
-
-  // Per-group entrance — pre-allocate for all possible groups
+  const counterY = useRef(new Animated.Value(14)).current;
   const groupAnims = useRef(
     Array.from({ length: MAX_GROUPS }, () => ({
       opacity: new Animated.Value(0),
-      y:       new Animated.Value(18),
+      y: new Animated.Value(18),
     }))
   ).current;
 
   useEffect(() => {
-    AsyncStorage.getItem('onboarding_interests').then(raw => {
-      if (raw) setInterestIds(JSON.parse(raw));
-    });
+    let cancelled = false;
+
+    async function hydrate() {
+      try {
+        const [storedInterests, storedSubcategories] = await Promise.all([
+          AsyncStorage.getItem('onboarding_interests'),
+          AsyncStorage.getItem('onboarding_subcategories'),
+        ]);
+
+        const parsedInterests = storedInterests ? (JSON.parse(storedInterests) as string[]) : [];
+        const parsedSubcategories = storedSubcategories ? (JSON.parse(storedSubcategories) as string[]) : [];
+
+        if (!cancelled && parsedInterests.length > 0) {
+          setInterestIds(parsedInterests.filter((id) => Boolean(SUBCATEGORY_MAP[id])));
+        }
+        if (!cancelled && parsedSubcategories.length > 0) {
+          setSelected(new Set(parsedSubcategories));
+        }
+
+        if (parsedInterests.length > 0 && parsedSubcategories.length > 0) return;
+
+        const preferences = await apiFetch<PreferencesResponseDto>('/api/user/preferences');
+        const apiInterestIds = (preferences.interests ?? [])
+          .map((item) => item.id)
+          .filter((id) => Boolean(SUBCATEGORY_MAP[id]));
+        const apiSubcategories = (preferences.subcategories ?? [])
+          .map((item) => item.id)
+          .filter((id) => id.length > 0);
+
+        if (!cancelled && parsedInterests.length === 0 && apiInterestIds.length > 0) {
+          setInterestIds(apiInterestIds);
+          await AsyncStorage.setItem('onboarding_interests', JSON.stringify(apiInterestIds));
+        }
+
+        if (!cancelled && parsedSubcategories.length === 0 && apiSubcategories.length > 0) {
+          setSelected(new Set(apiSubcategories));
+          await AsyncStorage.setItem('onboarding_subcategories', JSON.stringify(apiSubcategories));
+        }
+      } catch {
+        // Ignore hydration errors; users can continue selecting in-session.
+      }
+    }
+
+    hydrate();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
     const ease = Easing.out(Easing.cubic);
 
-    // Counter at 150ms
     Animated.parallel([
-      Animated.timing(counterOpacity, { toValue: 1, delay: 150, duration: 340, useNativeDriver: true }),
-      Animated.timing(counterY,       { toValue: 0, delay: 150, duration: 340, easing: ease, useNativeDriver: true }),
+      Animated.timing(counterOpacity, { toValue: 1, delay: 130, duration: 320, useNativeDriver: true }),
+      Animated.timing(counterY, { toValue: 0, delay: 130, duration: 320, easing: ease, useNativeDriver: true }),
     ]).start();
 
-    // Groups stagger at 60ms intervals starting at 210ms
-    groupAnims.forEach((anim, i) => {
-      const delay = 210 + i * 60;
+    groupAnims.forEach((anim, index) => {
+      const delay = 190 + index * 55;
       Animated.parallel([
-        Animated.timing(anim.opacity, { toValue: 1, delay, duration: 360, useNativeDriver: true }),
-        Animated.timing(anim.y,       { toValue: 0, delay, duration: 360, easing: ease, useNativeDriver: true }),
+        Animated.timing(anim.opacity, { toValue: 1, delay, duration: 320, useNativeDriver: true }),
+        Animated.timing(anim.y, { toValue: 0, delay, duration: 320, easing: ease, useNativeDriver: true }),
       ]).start();
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [counterOpacity, counterY, groupAnims]);
 
-  const visibleGroups = interestIds.length > 0
-    ? interestIds.filter(id => SUBCATEGORY_MAP[id]).map(id => ({ interestId: id, ...SUBCATEGORY_MAP[id] }))
-    : Object.entries(SUBCATEGORY_MAP).map(([interestId, group]) => ({ interestId, ...group }));
+  const visibleGroups = useMemo(
+    () =>
+      interestIds
+        .filter((id) => Boolean(SUBCATEGORY_MAP[id]))
+        .map((id) => ({ interestId: id, ...SUBCATEGORY_MAP[id] })),
+    [interestIds]
+  );
 
   const toggle = useCallback((id: string) => {
-    setSelected(prev => {
+    setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
@@ -169,6 +220,7 @@ export default function SubcategoriesScreen() {
   const handleContinue = useCallback(async () => {
     if (!canContinue || isLoading) return;
     setIsLoading(true);
+    setError('');
     try {
       const ids = Array.from(selected);
       await apiFetch('/api/onboarding/subcategories', {
@@ -176,20 +228,22 @@ export default function SubcategoriesScreen() {
         body: JSON.stringify({ subcategories: ids }),
       });
       await AsyncStorage.setItem('onboarding_subcategories', JSON.stringify(ids));
-      router.push(routes.dealBreakers() as never);
-    } catch {
-      const ids = Array.from(selected);
-      await AsyncStorage.setItem('onboarding_subcategories', JSON.stringify(ids));
-      router.push(routes.dealBreakers() as never);
+      router.replace(routes.dealBreakers() as never);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save subcategories. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  }, [canContinue, isLoading, selected, router]);
+  }, [canContinue, isLoading, router, selected]);
 
   const handleBack = () => router.push(routes.interests() as never);
 
-  const selectionLabel =
-    selected.size === 0 ? 'Select at least 1' : `${selected.size} of ${MAX} selected`;
+  const helperText =
+    selected.size === 0
+      ? 'Select at least one subcategory to continue'
+      : selected.size === MAX
+        ? "Perfect! You've selected the maximum"
+        : 'Great! Select more or continue';
 
   return (
     <>
@@ -197,92 +251,163 @@ export default function SubcategoriesScreen() {
       <OnboardingLayout
         step={2}
         totalSteps={4}
-        title="Get more specific!"
-        subtitle="Select specific areas within your interests."
+        title="Let's Get More Specific!"
+        subtitle="Select specific areas within your interests"
         onBack={handleBack}
         onContinue={handleContinue}
         canContinue={canContinue}
         isLoading={isLoading}
       >
-        {/* Counter */}
-        <Animated.View style={[styles.counterRow, { opacity: counterOpacity, transform: [{ translateY: counterY }] }]}>
-          <Ionicons
-            name={selected.size >= MIN ? 'checkmark-circle' : 'ellipse-outline'}
-            size={16}
-            color={selected.size >= MIN ? '#7D9B76' : 'rgba(45,45,45,0.4)'}
-          />
-          <Text style={[styles.counterTxt, selected.size >= MIN && styles.counterTxtGreen]}>
-            {selectionLabel}
-          </Text>
+        {!!error ? (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+
+        <Animated.View style={[styles.counterWrap, { opacity: counterOpacity, transform: [{ translateY: counterY }] }]}>
+          <View style={[styles.counterPill, selected.size > 0 && styles.counterPillReady]}>
+            <Text style={styles.counterText}>{selected.size} of {MAX} selected</Text>
+            {selected.size > 0 ? <Ionicons name="checkmark-circle" size={15} color="#7D9B76" /> : null}
+          </View>
+          <Text style={styles.counterHint}>{helperText}</Text>
         </Animated.View>
 
-        {/* Groups — each fades+slides up with staggered delay */}
-        {visibleGroups.map((group, gi) => {
-          const anim = groupAnims[gi] ?? groupAnims[0];
-          return (
-            <Animated.View
-              key={group.interestId}
-              style={[styles.group, { opacity: anim.opacity, transform: [{ translateY: anim.y }] }]}
-            >
-              <Text style={styles.groupLabel}>{group.groupLabel}</Text>
-              <View style={styles.pillRow}>
-                {group.items.map(item => {
-                  const isSelected = selected.has(item.id);
-                  const isDisabled = atMax && !isSelected;
-                  return (
-                    <Pressable
-                      key={item.id}
-                      style={({ pressed }) => [
-                        styles.pill,
-                        isSelected && styles.pillSelected,
-                        isDisabled && styles.pillDisabled,
-                        pressed && !isDisabled && styles.pillPressed,
-                      ]}
-                      onPress={() => toggle(item.id)}
-                      disabled={isDisabled}
-                    >
-                      {isSelected && <Ionicons name="checkmark" size={12} color="#FFFFFF" />}
-                      <Text style={[styles.pillLabel, isSelected && styles.pillLabelSelected]}>
-                        {item.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </Animated.View>
-          );
-        })}
+        {visibleGroups.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>No subcategories found for selected interests.</Text>
+          </View>
+        ) : (
+          visibleGroups.map((group, index) => {
+            const anim = groupAnims[index] ?? groupAnims[0];
+            return (
+              <Animated.View
+                key={group.interestId}
+                style={[styles.group, { opacity: anim.opacity, transform: [{ translateY: anim.y }] }]}
+              >
+                <Text style={styles.groupLabel}>{group.groupLabel}</Text>
+                <View style={styles.pillsRow}>
+                  {group.items.map((item) => {
+                    const isSelected = selected.has(item.id);
+                    const isDisabled = atMax && !isSelected;
+                    return (
+                      <Pressable
+                        key={item.id}
+                        style={({ pressed }) => [
+                          styles.pill,
+                          isDisabled && styles.pillDisabled,
+                          pressed && !isDisabled && styles.pillPressed,
+                        ]}
+                        onPress={() => toggle(item.id)}
+                        disabled={isDisabled}
+                      >
+                        <LinearGradient
+                          colors={isSelected ? ['#722F37', '#7A404A'] : ['rgba(125,155,118,0.14)', 'rgba(125,155,118,0.06)']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={[styles.pillFill, isSelected && styles.pillSelected]}
+                        >
+                          <Text style={[styles.pillText, isSelected && styles.pillTextSelected]}>{item.label}</Text>
+                          {isSelected ? <Ionicons name="checkmark-circle" size={14} color="#FFFFFF" /> : null}
+                        </LinearGradient>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </Animated.View>
+            );
+          })
+        )}
       </OnboardingLayout>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  counterRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 20 },
-  counterTxt: { fontSize: 13, fontWeight: '600', color: 'rgba(45,45,45,0.45)' },
-  counterTxtGreen: { color: '#7D9B76' },
-
-  group: { marginBottom: 22 },
-  groupLabel: {
-    fontSize: 13, fontWeight: '700', color: 'rgba(45,45,45,0.55)',
-    textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 10,
+  errorBanner: {
+    backgroundColor: 'rgba(255, 247, 237, 0.95)',
+    borderColor: 'rgba(251, 146, 60, 0.35)',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 14,
   },
-  pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  errorText: {
+    color: '#C2410C',
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
 
+  counterWrap: { alignItems: 'center', marginBottom: 16 },
+  counterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(154,176,154,0.24)',
+    backgroundColor: 'rgba(154,176,154,0.10)',
+    borderRadius: 999,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+  },
+  counterPillReady: {
+    borderColor: 'rgba(125,155,118,0.34)',
+    backgroundColor: 'rgba(157,171,155,0.16)',
+  },
+  counterText: { color: '#7D9B76', fontSize: 14, fontWeight: '600' },
+  counterHint: {
+    marginTop: 7,
+    fontSize: 13,
+    lineHeight: 18,
+    color: 'rgba(66,66,72,0.65)',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+
+  group: { marginBottom: 20 },
+  groupLabel: {
+    fontSize: 17,
+    lineHeight: 22,
+    color: '#2D2D2D',
+    textAlign: 'center',
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  pillsRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
   pill: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingHorizontal: 14, paddingVertical: 9,
-    backgroundColor: 'rgba(255,255,255,0.75)',
-    borderRadius: 999, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 4, elevation: 1,
+    borderRadius: 999,
+    borderWidth: 2,
+    borderColor: 'rgba(125,155,118,0.30)',
+    overflow: 'hidden',
+  },
+  pillFill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
   },
   pillSelected: {
-    backgroundColor: '#7D9B76', borderColor: '#7D9B76',
-    shadowColor: '#7D9B76', shadowOpacity: 0.25, shadowRadius: 6,
+    borderColor: '#722F37',
   },
-  pillDisabled: { opacity: 0.35 },
-  pillPressed: { transform: [{ scale: 0.95 }] },
-  pillLabel: { fontSize: 13, fontWeight: '600', color: 'rgba(45,45,45,0.8)' },
-  pillLabelSelected: { color: '#FFFFFF' },
+  pillDisabled: { opacity: 0.42 },
+  pillPressed: { transform: [{ scale: 0.97 }] },
+  pillText: {
+    color: '#7D9B76',
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  pillTextSelected: { color: '#FFFFFF' },
+
+  emptyState: { paddingVertical: 18 },
+  emptyStateText: {
+    textAlign: 'center',
+    color: 'rgba(66,66,72,0.6)',
+    fontSize: 14,
+    fontWeight: '500',
+  },
 });

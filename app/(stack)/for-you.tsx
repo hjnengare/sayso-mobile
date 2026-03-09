@@ -1,30 +1,69 @@
-import { useCallback, useMemo } from 'react';
-import { SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { useRouter, Stack } from 'expo-router';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { StyleSheet, View, type ListRenderItem, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useNavigation } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import type { PaginatedBusinessFeedResponseDto } from '@sayso/contracts';
-import { BusinessFeed } from '../../src/components/feed/BusinessFeed';
+import type { BusinessListItemDto, PaginatedBusinessFeedResponseDto } from '@sayso/contracts';
+import { BusinessCard } from '../../src/components/BusinessCard';
 import { EmptyState } from '../../src/components/EmptyState';
 import { SkeletonBusinessCard } from '../../src/components/feed/SkeletonBusinessCard';
-import { HeaderBellButton } from '../../src/components/HeaderBellButton';
 import { Text } from '../../src/components/Typography';
 import { useAuthSession } from '../../src/hooks/useSession';
 import { useUserPreferences } from '../../src/hooks/useUserPreferences';
+import { useBusinessSearch } from '../../src/hooks/useBusinessSearch';
+import { useRealtimeQueryInvalidation } from '../../src/hooks/useRealtimeQueryInvalidation';
 import { apiFetch } from '../../src/lib/api';
 import { routes } from '../../src/navigation/routes';
 import { homeTokens } from '../../src/screens/tabs/home/HomeTokens';
+import { TransitionItem } from '../../src/components/motion/TransitionItem';
+import { ForYouRouteView } from '../../src/screens/stack/for-you-screen/ForYouRouteView';
+import { HomeSearchBar } from '../../src/screens/tabs/home/HomeSearchBar';
 
 const REQUEST_LIMIT = 120;
 const VISIBLE_CHUNK_SIZE = 12;
 const NAVBAR_BG = '#722F37';
 const SCROLL_COLOR_THRESHOLD = 60;
+const BACK_TO_TOP_THRESHOLD = 900;
 
 export default function ForYouRoute() {
   const router = useRouter();
   const navigation = useNavigation();
+  const headerCollapsedRef = useRef(false);
   const { user } = useAuthSession();
   const preferences = useUserPreferences(Boolean(user));
+
+  const [inputValue, setInputValue] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isSearching = debouncedQuery.trim().length >= 1;
+
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const listRef = useRef<import('react-native').FlatList<BusinessListItemDto>>(null);
+
+  const searchQuery = useBusinessSearch({ query: debouncedQuery });
+  const searchResults = searchQuery.data ?? [];
+
+  const realtimeTargets = useMemo(
+    () => [
+      {
+        key: 'for-you-businesses',
+        table: 'businesses',
+        queryKeys: [['for-you'], ['business-search']],
+      },
+      {
+        key: 'for-you-reviews',
+        table: 'reviews',
+        queryKeys: [['for-you'], ['business-search']],
+      },
+      {
+        key: 'for-you-review-helpful-votes',
+        table: 'review_helpful_votes',
+        queryKeys: [['for-you']],
+      },
+    ],
+    []
+  );
+
+  useRealtimeQueryInvalidation(realtimeTargets);
 
   const preferenceIds = useMemo(
     () => ({
@@ -40,190 +79,194 @@ export default function ForYouRoute() {
     preferenceIds.subcategories.length > 0 ||
     preferenceIds.dealbreakers.length > 0;
 
-  if (!user) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Stack.Screen options={{ title: 'For You' }} />
-        <View style={styles.header}>
-          <View style={styles.headerCopy}>
-            <Text style={styles.title}>For You</Text>
-            <Text style={styles.subtitle}>Personalized discovery starts after sign-in.</Text>
-          </View>
-          <HeaderBellButton />
-        </View>
+  const handleInputChange = useCallback((text: string) => {
+    setInputValue(text);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedQuery(text), 300);
+  }, []);
 
-        <LinearGradient
-          colors={[homeTokens.coral, homeTokens.coralDark]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.guestCard}
-        >
-          <Text style={styles.guestTitle}>Create an account to unlock personalised recommendations.</Text>
-          <TouchableOpacity
-            style={styles.guestPrimary}
-            onPress={() => router.push(routes.register() as never)}
-            activeOpacity={0.88}
-          >
-            <Text style={styles.guestPrimaryText}>Create Account</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.guestSecondary}
-            onPress={() => router.push(routes.login() as never)}
-            activeOpacity={0.88}
-          >
-            <Text style={styles.guestSecondaryText}>Sign In</Text>
-          </TouchableOpacity>
-        </LinearGradient>
-      </SafeAreaView>
-    );
-  }
+  const handleClearSearch = useCallback(() => {
+    setInputValue('');
+    setDebouncedQuery('');
+  }, []);
 
-  const fetchForYouPage = (cursor: string | null) => {
-    const params = new URLSearchParams();
-    params.set('limit', String(REQUEST_LIMIT));
-    params.set('feed_strategy', 'mixed');
-    if (preferenceIds.interests.length > 0) {
-      params.set('interest_ids', preferenceIds.interests.join(','));
-    }
-    if (preferenceIds.subcategories.length > 0) {
-      params.set('sub_interest_ids', preferenceIds.subcategories.join(','));
-    }
-    if (preferenceIds.dealbreakers.length > 0) {
-      params.set('dealbreakers', preferenceIds.dealbreakers.join(','));
-    }
-    if (cursor) {
-      params.set('cursor', cursor);
-    }
-
-    return apiFetch<PaginatedBusinessFeedResponseDto>(`/api/businesses?${params.toString()}`);
-  };
-
-  const handleScrollY = useCallback((y: number) => {
-    navigation.setOptions({
-      headerStyle: {
-        backgroundColor: y > SCROLL_COLOR_THRESHOLD ? NAVBAR_BG : homeTokens.offWhite,
-      },
-      headerTintColor: y > SCROLL_COLOR_THRESHOLD ? '#FFFFFF' : homeTokens.charcoal,
-    });
-  }, [navigation]);
-
-  const feedListHeaderTop = (
-    <View style={styles.header}>
-      <View style={styles.headerCopy}>
-        <Text style={styles.title}>For You</Text>
-        <Text style={styles.subtitle}>A personalized discovery feed for your next outing.</Text>
-      </View>
-    </View>
+  const handleScrollY = useCallback(
+    (y: number) => {
+      const collapsed = y > SCROLL_COLOR_THRESHOLD;
+      if (collapsed === headerCollapsedRef.current) return;
+      headerCollapsedRef.current = collapsed;
+      navigation.setOptions({
+        headerStyle: {
+          backgroundColor: collapsed ? NAVBAR_BG : homeTokens.offWhite,
+        },
+        headerTintColor: collapsed ? '#FFFFFF' : homeTokens.charcoal,
+      });
+    },
+    [navigation]
   );
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <Stack.Screen
-        options={{
-          title: 'For You',
-          headerRight: () => <HeaderBellButton />,
-        }}
-      />
+  const handleSearchScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const y = e.nativeEvent.contentOffset.y;
+      const shouldShow = y > BACK_TO_TOP_THRESHOLD;
+      setShowBackToTop((current) => (current === shouldShow ? current : shouldShow));
+      handleScrollY(y);
+    },
+    [handleScrollY]
+  );
 
-      {preferences.isLoading ? (
-        <View style={styles.loadingList}>
-          {Array.from({ length: 5 }, (_, index) => (
-            <SkeletonBusinessCard key={`for-you-loading-${index}`} />
+  const fetchForYouPage = useCallback(
+    (cursor: string | null) => {
+      const params = new URLSearchParams();
+      params.set('limit', String(REQUEST_LIMIT));
+      params.set('feed_strategy', 'mixed');
+      if (preferenceIds.interests.length > 0) {
+        params.set('interest_ids', preferenceIds.interests.join(','));
+      }
+      if (preferenceIds.subcategories.length > 0) {
+        params.set('sub_interest_ids', preferenceIds.subcategories.join(','));
+      }
+      if (preferenceIds.dealbreakers.length > 0) {
+        params.set('dealbreakers', preferenceIds.dealbreakers.join(','));
+      }
+      if (cursor) {
+        params.set('cursor', cursor);
+      }
+      return apiFetch<PaginatedBusinessFeedResponseDto>(`/api/businesses?${params.toString()}`);
+    },
+    [preferenceIds]
+  );
+
+  const keyExtractor = useCallback((item: BusinessListItemDto) => item.id, []);
+  const renderItem = useCallback<ListRenderItem<BusinessListItemDto>>(
+    ({ item, index }) => (
+      <TransitionItem variant="listItem" index={index + 1} animate={index < VISIBLE_CHUNK_SIZE}>
+        <BusinessCard business={item} />
+      </TransitionItem>
+    ),
+    []
+  );
+
+  const heroSection = useMemo(
+    () => (
+      <View style={styles.heroSection}>
+        <TransitionItem variant="header" index={0}>
+          <Text style={styles.heroTitle}>Curated Just For You</Text>
+          <Text style={styles.heroDesc}>
+            Businesses tailored to your interests and preferences — a personalised discovery feed for your next outing.
+          </Text>
+        </TransitionItem>
+        <TransitionItem variant="input" index={1}>
+          <View style={styles.searchWrap}>
+            <HomeSearchBar
+              value={inputValue}
+              onChangeText={handleInputChange}
+              onClear={handleClearSearch}
+              isFetching={isSearching && searchQuery.isFetching}
+            />
+          </View>
+        </TransitionItem>
+      </View>
+    ),
+    [inputValue, handleInputChange, handleClearSearch, isSearching, searchQuery.isFetching]
+  );
+
+  const resultsHeader = useMemo(
+    () => (
+      <View>
+        {heroSection}
+        {searchQuery.data !== undefined && (
+          <TransitionItem variant="card" index={2}>
+            <Text style={styles.resultsCount}>
+              {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for &ldquo;{debouncedQuery}&rdquo;
+            </Text>
+          </TransitionItem>
+        )}
+      </View>
+    ),
+    [debouncedQuery, heroSection, searchQuery.data, searchResults.length]
+  );
+
+  const searchEmpty = useMemo(() => {
+    if (searchQuery.isLoading) {
+      return (
+        <View style={styles.skeletonStack}>
+          {Array.from({ length: 5 }, (_, i) => (
+            <SkeletonBusinessCard key={i} />
           ))}
         </View>
-      ) : preferences.error ? (
-        <EmptyState
-          icon="wifi-outline"
-          title="Couldn't load personalised picks right now."
-          message={preferences.error}
-        />
-      ) : !hasPreferences ? (
-        <EmptyState
-          icon="sparkles-outline"
-          title="Curated from your interests"
-          message="Based on what you selected, no matches in this feed yet."
-        />
-      ) : (
-        <BusinessFeed
-          feedKey="for-you"
-          queryKey={['for-you', user.id, preferenceIds, REQUEST_LIMIT]}
-          listHeaderTop={feedListHeaderTop}
-          onScrollY={handleScrollY}
-          errorTitle="Couldn't load personalised picks right now."
-          emptyTitle="Curated from your interests"
-          emptyMessage="Based on what you selected, no matches in this feed yet."
-          requestLimit={REQUEST_LIMIT}
-          visibleChunkSize={VISIBLE_CHUNK_SIZE}
-          fetchPage={fetchForYouPage}
-        />
-      )}
-    </SafeAreaView>
+      );
+    }
+
+    if (searchQuery.isError) {
+      return <EmptyState icon="wifi-outline" title="Couldn't load results" message="Pull to refresh and try again." />;
+    }
+
+    return (
+      <EmptyState
+        icon="search-outline"
+        title={`No results for "${debouncedQuery}"`}
+        message="Try a different search term."
+      />
+    );
+  }, [debouncedQuery, searchQuery.isError, searchQuery.isLoading]);
+
+  return (
+    <ForYouRouteView
+      userId={user?.id ?? null}
+      isSearching={isSearching}
+      showBackToTop={showBackToTop}
+      listRef={listRef}
+      keyExtractor={keyExtractor}
+      renderItem={renderItem}
+      searchResults={searchResults}
+      searchLoading={searchQuery.isLoading}
+      searchError={searchQuery.isError}
+      debouncedQuery={debouncedQuery}
+      heroSection={heroSection}
+      resultsHeader={resultsHeader}
+      searchEmpty={searchEmpty}
+      handleSearchScroll={handleSearchScroll}
+      preferencesLoading={preferences.isLoading}
+      preferencesError={preferences.error}
+      hasPreferences={hasPreferences}
+      fetchForYouPage={fetchForYouPage}
+      preferenceIds={preferenceIds}
+      handleScrollY={handleScrollY}
+      onPressOnboarding={() => router.push(routes.onboarding() as never)}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: homeTokens.offWhite,
-  },
-  header: {
+  heroSection: {
     paddingHorizontal: 4,
-    paddingTop: 8,
+    paddingTop: 16,
     paddingBottom: 4,
   },
-  headerCopy: {
-    flex: 1,
-  },
-  title: {
+  heroTitle: {
     fontSize: 28,
     fontWeight: '800',
     color: homeTokens.charcoal,
   },
-  subtitle: {
+  heroDesc: {
     fontSize: 15,
+    lineHeight: 22,
     color: homeTokens.textSecondary,
-    marginTop: 4,
+    marginTop: 6,
+    marginBottom: 2,
   },
-  guestCard: {
-    marginHorizontal: 20,
-    marginTop: 16,
-    borderRadius: 28,
-    padding: 20,
+  searchWrap: {
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  resultsCount: {
+    fontSize: 13,
+    color: homeTokens.textSecondary,
+    paddingHorizontal: 4,
+    paddingBottom: 8,
+  },
+  skeletonStack: {
     gap: 12,
-  },
-  guestTitle: {
-    fontSize: 24,
-    lineHeight: 30,
-    fontWeight: '700',
-    color: homeTokens.white,
-  },
-  guestPrimary: {
-    marginTop: 8,
-    borderRadius: 999,
-    backgroundColor: homeTokens.white,
-    paddingVertical: 14,
-  },
-  guestPrimaryText: {
-    textAlign: 'center',
-    color: homeTokens.coral,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  guestSecondary: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.24)',
-    paddingVertical: 14,
-  },
-  guestSecondaryText: {
-    textAlign: 'center',
-    color: homeTokens.white,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  loadingList: {
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingTop: 8,
   },
 });
