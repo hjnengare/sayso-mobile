@@ -14,5 +14,12 @@ export function recordSecurityEvent(
   );
 
   // Keep telemetry non-sensitive by design (no PII/tokens/request bodies).
-  console.warn('[security-event]', event, payload);
+  const reason = typeof payload.reason === 'string' ? payload.reason : null;
+  const shouldWarn =
+    event === 'security.pinning.failed' ||
+    event === 'security.integrity.blocked_sensitive_action' ||
+    (event === 'security.pinning.unavailable' && reason !== 'missing_pinned_hashes');
+  const logger = shouldWarn ? console.warn : console.debug;
+
+  logger('[security-event]', event, payload);
 }

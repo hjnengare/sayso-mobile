@@ -2,11 +2,11 @@ import { useCallback, useRef, useState } from 'react';
 import {
   NativeScrollEvent,
   NativeSyntheticEvent,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { Text } from '../../components/Typography';
 import { useGlobalScrollToTop } from '../../hooks/useGlobalScrollToTop';

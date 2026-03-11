@@ -12,6 +12,7 @@ import { Providers } from '../src/providers/Providers';
 import { RootGuard } from '../src/components/RootGuard';
 import { rootStackScreenOptions } from '../src/navigation/screenOptions';
 import { TransitionScopeProvider } from '../src/components/motion/TransitionScope';
+import { NAVBAR_BG_COLOR } from '../src/styles/colors';
 
 export default function RootLayout() {
   const pathname = usePathname();
@@ -29,7 +30,7 @@ export default function RootLayout() {
 
   return (
     <Providers>
-      <StatusBar style="dark" />
+      <StatusBar style="light" backgroundColor={NAVBAR_BG_COLOR} translucent={false} />
       <TransitionScopeProvider routeKey={pathname}>
         <RootGuard>
           <Stack screenOptions={rootStackScreenOptions}>

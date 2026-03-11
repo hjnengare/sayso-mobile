@@ -10,6 +10,7 @@ import { Text } from '../../../components/Typography';
 import { FeedFooter } from '../../../components/feed/FeedFooter';
 import { LoadMoreButton } from '../../../components/feed/LoadMoreButton';
 import { HomeSearchBar } from '../../tabs/home/HomeSearchBar';
+import { APP_PAGE_GUTTER } from '../../../styles/layout';
 
 const SAGE = '#9DAB9B';
 const CHARCOAL = '#2D2D2D';
@@ -187,7 +188,7 @@ export const EventsSpecialsFeedView = memo(EventsSpecialsFeedViewComponent);
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  list: { flexGrow: 1, paddingHorizontal: 4, paddingTop: 8, paddingBottom: 24 },
+  list: { flexGrow: 1, paddingHorizontal: APP_PAGE_GUTTER, paddingTop: 8, paddingBottom: 24 },
   hero: {
     paddingTop: 8,
     paddingBottom: 16,

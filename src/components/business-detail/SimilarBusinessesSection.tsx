@@ -23,6 +23,13 @@ type SimilarBusinessCardProps = {
   business: BusinessListItemDto;
 };
 
+function getStarColor(rating: number | null): string {
+  if (rating == null) return '#D66B6B';
+  if (rating > 4.0) return '#E6A547';
+  if (rating > 2.0) return '#D4915C';
+  return '#D66B6B';
+}
+
 function SimilarBusinessCard({ business }: SimilarBusinessCardProps) {
   const router = useRouter();
   const identifier = getBusinessIdentifier(business);
@@ -64,7 +71,7 @@ function SimilarBusinessCard({ business }: SimilarBusinessCardProps) {
         {/* Verified badge */}
         {business.verified ? (
           <View style={[styles.badge, styles.badgeTopLeft]}>
-            <Ionicons name="checkmark-circle" size={12} color="#2563EB" />
+            <Ionicons name="checkmark-circle" size={12} color={businessDetailColors.sage} />
             <Text style={styles.badgeText}>Verified</Text>
           </View>
         ) : null}
@@ -73,7 +80,7 @@ function SimilarBusinessCard({ business }: SimilarBusinessCardProps) {
         <View style={[styles.badge, styles.badgeTopRight]}>
           {hasRating && displayRating != null ? (
             <>
-              <Ionicons name="star" size={12} color="#F59E0B" />
+              <Ionicons name="star" size={12} color={getStarColor(displayRating)} />
               <Text style={styles.badgeText}>{displayRating.toFixed(1)}</Text>
             </>
           ) : (
@@ -240,7 +247,7 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#111827',
+    color: businessDetailColors.charcoal,
   },
   body: {
     padding: 14,

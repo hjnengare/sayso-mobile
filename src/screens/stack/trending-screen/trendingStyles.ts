@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { businessDetailColors } from '../../../components/business-detail/styles';
+import { businessDetailColors, businessDetailSpacing } from '../../../components/business-detail/styles';
 
 export const styles = StyleSheet.create({
   container: {
@@ -7,12 +7,12 @@ export const styles = StyleSheet.create({
     backgroundColor: businessDetailColors.page,
   },
   searchWrap: {
-    paddingHorizontal: 4,
+    paddingHorizontal: businessDetailSpacing.pageGutter,
     paddingTop: 10,
     paddingBottom: 8,
   },
   filtersWrap: {
-    paddingHorizontal: 4,
+    paddingHorizontal: businessDetailSpacing.pageGutter,
     paddingBottom: 8,
     gap: 10,
   },
@@ -31,7 +31,7 @@ export const styles = StyleSheet.create({
   },
   pillRow: {
     gap: 8,
-    paddingRight: 4,
+    paddingRight: businessDetailSpacing.pageGutter,
   },
   pill: {
     paddingHorizontal: 12,
@@ -63,7 +63,7 @@ export const styles = StyleSheet.create({
   activeBadgesRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 4,
+    paddingHorizontal: businessDetailSpacing.pageGutter,
     paddingBottom: 8,
     gap: 8,
     alignItems: 'center',
@@ -97,7 +97,7 @@ export const styles = StyleSheet.create({
   toggleRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    paddingHorizontal: 4,
+    paddingHorizontal: businessDetailSpacing.pageGutter,
     paddingBottom: 10,
   },
   togglePill: {
@@ -135,7 +135,7 @@ export const styles = StyleSheet.create({
     color: businessDetailColors.charcoal,
   },
   list: {
-    paddingHorizontal: 4,
+    paddingHorizontal: businessDetailSpacing.pageGutter,
     paddingTop: 4,
     paddingBottom: 4,
     flexGrow: 1,
@@ -165,7 +165,7 @@ export const styles = StyleSheet.create({
     height: 24,
   },
   hero: {
-    paddingHorizontal: 4,
+    paddingHorizontal: businessDetailSpacing.pageGutter,
     paddingTop: 16,
     paddingBottom: 12,
     alignItems: 'center',

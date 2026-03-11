@@ -4,11 +4,11 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { SkeletonBlock } from '../../components/SkeletonBlock';
@@ -249,10 +249,6 @@ export default function LeaderboardScreen() {
         {/* Main card — sage background matching web card-bg */}
         <TransitionItem variant="card" index={2}>
           <View style={s.card}>
-            {/* Decorative orbs */}
-            <View style={s.orbTopRight} pointerEvents="none" />
-            <View style={s.orbBottomLeft} pointerEvents="none" />
-
             {activeTab === 'contributors' ? (
               <>
                 {loadingReviewers ? (
@@ -426,7 +422,7 @@ const s = StyleSheet.create({
 
   // Hero
   hero: {
-    paddingHorizontal: 24,
+    paddingHorizontal: businessDetailSpacing.pageGutter,
     paddingTop: 20,
     paddingBottom: 16,
     alignItems: 'center',
@@ -449,7 +445,7 @@ const s = StyleSheet.create({
 
   // Tabs — white/80 container with border, sage active (mirrors web Tabs.tsx)
   tabContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: businessDetailSpacing.pageGutter,
     marginBottom: 12,
     alignItems: 'center',
   },
@@ -486,7 +482,7 @@ const s = StyleSheet.create({
 
   // Main card — sage card-bg with white/20 border (mirrors web card wrapper)
   card: {
-    marginHorizontal: 12,
+    marginHorizontal: businessDetailSpacing.pageGutter,
     backgroundColor: CARD_BG,
     borderRadius: 12,
     borderWidth: 1,
@@ -499,26 +495,6 @@ const s = StyleSheet.create({
     elevation: 4,
     overflow: 'hidden',
   },
-  orbTopRight: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(157,171,155,0.15)',
-    // blur not available natively; subtle color is enough
-  },
-  orbBottomLeft: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(114,47,55,0.08)',
-  },
-
   // List
   list: {
     gap: 8,
@@ -651,7 +627,7 @@ const s = StyleSheet.create({
   // Badge section — coral/navbar-bg background (mirrors web)
   badgeSection: {
     marginTop: 20,
-    marginHorizontal: 12,
+    marginHorizontal: businessDetailSpacing.pageGutter,
     backgroundColor: CORAL,
     borderRadius: 12,
     padding: 20,

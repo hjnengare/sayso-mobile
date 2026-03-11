@@ -1,5 +1,15 @@
 import { memo } from 'react';
-import { FlatList, Pressable, SafeAreaView, StyleSheet, TouchableOpacity, View, type ListRenderItem, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import {
+  FlatList,
+  Pressable,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  type ListRenderItem,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -161,7 +171,7 @@ function ForYouRouteViewComponent({
         <BusinessFeed
           feedKey="for-you"
           queryKey={['for-you', userId, preferenceIds, REQUEST_LIMIT]}
-          horizontalPadding={4}
+          horizontalPadding={homeTokens.pageGutter}
           listHeaderTop={heroSection}
           onScrollY={handleScrollY}
           errorTitle="Couldn't load personalised picks right now."
@@ -209,7 +219,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     alignSelf: 'flex-start',
-    marginHorizontal: 4,
+    marginHorizontal: homeTokens.pageGutter,
     marginBottom: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -224,7 +234,7 @@ const styles = StyleSheet.create({
   loadingList: {
     flex: 1,
     gap: 12,
-    paddingHorizontal: 4,
+    paddingHorizontal: homeTokens.pageGutter,
     paddingTop: 8,
   },
   loadingHeader: {
@@ -232,7 +242,7 @@ const styles = StyleSheet.create({
   },
   list: {
     flexGrow: 1,
-    paddingHorizontal: 4,
+    paddingHorizontal: homeTokens.pageGutter,
     paddingTop: 4,
     paddingBottom: 16,
   },
@@ -245,7 +255,7 @@ const styles = StyleSheet.create({
   guestHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingHorizontal: 4,
+    paddingHorizontal: homeTokens.pageGutter,
     paddingTop: 8,
     paddingBottom: 4,
   },
@@ -253,7 +263,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   guestCard: {
-    marginHorizontal: 4,
+    marginHorizontal: homeTokens.pageGutter,
     marginTop: 16,
     borderRadius: 28,
     padding: 20,

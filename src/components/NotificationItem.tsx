@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NotificationDto } from '@sayso/contracts';
 import { Text } from './Typography';
+import { APP_PAGE_GUTTER } from '../styles/layout';
 
 const TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   review: 'star',
@@ -47,7 +48,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingHorizontal: 16,
+    paddingHorizontal: APP_PAGE_GUTTER,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#F3F4F6',

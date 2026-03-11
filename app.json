@@ -6,6 +6,15 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "androidStatusBar": {
+      "backgroundColor": "#722F37",
+      "barStyle": "light-content",
+      "translucent": false
+    },
+    "androidNavigationBar": {
+      "backgroundColor": "#722F37",
+      "barStyle": "light-content"
+    },
     "assetBundlePatterns": [
       "**/*"
     ],

@@ -18,6 +18,7 @@ import { FeedFooter } from './FeedFooter';
 import { LoadMoreButton } from './LoadMoreButton';
 import { SkeletonBusinessCard } from './SkeletonBusinessCard';
 import { TransitionItem } from '../motion/TransitionItem';
+import { APP_PAGE_GUTTER } from '../../styles/layout';
 
 const DEFAULT_VISIBLE_CHUNK_SIZE = 12;
 const BACK_TO_TOP_THRESHOLD = 900;
@@ -49,7 +50,7 @@ export function BusinessFeed({
   queryKey,
   subtitle,
   listHeaderTop,
-  horizontalPadding = 16,
+  horizontalPadding = APP_PAGE_GUTTER,
   onScrollY,
   errorTitle,
   emptyTitle,

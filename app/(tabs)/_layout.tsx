@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useNotifications } from '../../src/hooks/useNotifications';
+import { StackPageHeader } from '../../src/components/StackPageHeader';
 
 const NAVBAR_BG_COLOR = '#722F37';
 
@@ -52,6 +53,8 @@ export default function TabsLayout() {
         name="profile/index"
         options={{
           title: 'Profile',
+          headerShown: true,
+          header: (props) => <StackPageHeader {...props} showBackButton={props.navigation.canGoBack()} />,
           tabBarBadge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : undefined,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? 'person' : 'person-outline'} color={color} size={size} />

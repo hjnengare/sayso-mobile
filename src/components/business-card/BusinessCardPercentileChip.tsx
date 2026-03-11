@@ -47,7 +47,7 @@ export function BusinessCardPercentileChip({ label, value }: Props) {
       <Ionicons
         name={getIconName(label)}
         size={12}
-        color={isPlaceholder ? 'rgba(17, 24, 39, 0.4)' : 'rgba(17, 24, 39, 0.78)'}
+        color={isPlaceholder ? 'rgba(45,45,45,0.42)' : 'rgba(45,45,45,0.74)'}
       />
       <Text style={[styles.text, isPlaceholder ? styles.textPlaceholder : null]}>
         {isPlaceholder ? '—' : `${value}%`}
@@ -64,17 +64,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: 'rgba(17, 24, 39, 0.05)',
+    backgroundColor: 'rgba(45,45,45,0.045)',
   },
   chipPlaceholder: {
-    backgroundColor: 'rgba(17, 24, 39, 0.03)',
+    backgroundColor: 'rgba(45,45,45,0.03)',
   },
   text: {
     fontSize: 10,
-    fontWeight: '700',
-    color: 'rgba(17, 24, 39, 0.82)',
+    fontWeight: '600',
+    color: 'rgba(45,45,45,0.74)',
   },
   textPlaceholder: {
-    color: 'rgba(17, 24, 39, 0.42)',
+    color: 'rgba(45,45,45,0.42)',
   },
 });

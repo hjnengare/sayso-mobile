@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { StyleSheet, View, type StyleProp } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BusinessPageHeader, type BusinessHeaderMenuItem } from './business-detail/BusinessPageHeader';
@@ -8,15 +8,20 @@ import { routes } from '../navigation/routes';
 
 type Props = {
   navigation: { canGoBack: () => boolean; goBack: () => void };
-  options?: { headerStyle?: StyleProp<{ backgroundColor?: string }>; headerTintColor?: string };
+  options?: { headerStyle?: unknown; headerTintColor?: string };
   onPressBack?: () => void;
+  showBackButton?: boolean;
 };
 
-export function StackPageHeader({ navigation, options, onPressBack }: Props) {
+export function StackPageHeader({ navigation, options, onPressBack, showBackButton }: Props) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const bgColor = (options?.headerStyle ? StyleSheet.flatten(options.headerStyle) : undefined)?.backgroundColor ?? businessDetailColors.page;
+  const flattenedHeaderStyle = options?.headerStyle
+    ? (StyleSheet.flatten(options.headerStyle as never) as { backgroundColor?: string } | undefined)
+    : undefined;
+  const bgColor = flattenedHeaderStyle?.backgroundColor ?? businessDetailColors.page;
   const collapsed = options?.headerTintColor === '#FFFFFF';
+  const effectiveShowBackButton = showBackButton ?? navigation.canGoBack();
 
   const menuItems = useMemo<BusinessHeaderMenuItem[]>(
     () => [
@@ -43,6 +48,7 @@ export function StackPageHeader({ navigation, options, onPressBack }: Props) {
         onPressMessages={() => router.push('/(stack)/dm')}
         menuItems={menuItems}
         collapsed={collapsed}
+        showBackButton={effectiveShowBackButton}
       />
     </View>
   );

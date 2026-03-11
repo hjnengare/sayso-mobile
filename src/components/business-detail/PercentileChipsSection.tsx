@@ -18,10 +18,10 @@ function normalizeValue(value?: number): number | null {
 }
 
 function getValueColor(value: number | null): string {
-  if (value === null) return 'rgba(45,55,72,0.25)';
+  if (value === null) return 'rgba(45,45,45,0.25)';
   if (value >= 80) return '#2E7D32';
   if (value >= 60) return '#7D9B76';
-  if (value >= 40) return '#F59E0B';
+  if (value >= 40) return '#D4915C';
   return '#C0392B';
 }
 
@@ -66,7 +66,7 @@ export function PercentileChipsSection({
                 <Text style={[styles.customIcon, { color }]}>{metric.customIcon}</Text>
               )}
               <Text style={styles.chipLabel}>{metric.label}</Text>
-              <Text style={[styles.chipValue, { color: isEmpty ? 'rgba(45,55,72,0.25)' : businessDetailColors.charcoal }]}>
+              <Text style={[styles.chipValue, { color: isEmpty ? 'rgba(45,45,45,0.25)' : businessDetailColors.charcoal }]}>
                 {isEmpty ? '—' : `${metric.value}%`}
               </Text>
             </View>

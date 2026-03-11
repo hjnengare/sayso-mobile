@@ -21,6 +21,7 @@ export type ReviewerParams = {
 export type WriteReviewParams = {
   type: ReviewTargetType;
   id: string;
+  reviewId?: string;
 };
 
 export type DMThreadParams = {

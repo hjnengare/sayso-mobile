@@ -14,6 +14,7 @@ import { BusinessCard } from '../../../components/BusinessCard';
 import { EmptyState } from '../../../components/EmptyState';
 import type { BusinessListItemDto } from '@sayso/contracts';
 import { homeTokens } from './HomeTokens';
+import { APP_PAGE_GUTTER } from '../../../styles/layout';
 
 type Props = {
   query: string;
@@ -129,7 +130,8 @@ export function HomeSearchResults({
 
 const styles = StyleSheet.create({
   content: {
-    padding: 16,
+    paddingHorizontal: APP_PAGE_GUTTER,
+    paddingTop: 16,
     paddingBottom: 32,
   },
   header: {

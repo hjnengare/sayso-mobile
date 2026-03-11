@@ -1,3 +1,5 @@
+import { APP_PAGE_GUTTER } from '../../styles/layout';
+
 // Colors aligned exactly with sayso_web tailwind.config.js
 export const businessDetailColors = {
   page: '#E5E0E5',             // page-bg / off-white
@@ -14,7 +16,7 @@ export const businessDetailColors = {
 };
 
 export const businessDetailSpacing = {
-  pageGutter: 8,
+  pageGutter: APP_PAGE_GUTTER,
   sectionGap: 14,
   cardRadius: 12,
 };

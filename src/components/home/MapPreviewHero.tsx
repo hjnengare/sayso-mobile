@@ -172,9 +172,6 @@ export function MapPreviewHero({ style }: Props) {
         ) : null}
 
         <View pointerEvents="none" style={styles.colorWash} />
-        <View pointerEvents="none" style={styles.orbNorth} />
-        <View pointerEvents="none" style={styles.orbSouth} />
-
         <View pointerEvents="none" style={styles.liveBadge}>
           <Text style={styles.liveBadgeText}>Live Nearby</Text>
         </View>
@@ -221,24 +218,6 @@ const styles = StyleSheet.create({
   colorWash: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(114,47,55,0.1)',
-  },
-  orbNorth: {
-    position: 'absolute',
-    width: 180,
-    height: 180,
-    borderRadius: 180,
-    top: -90,
-    right: -55,
-    backgroundColor: 'rgba(255,255,255,0.16)',
-  },
-  orbSouth: {
-    position: 'absolute',
-    width: 160,
-    height: 160,
-    borderRadius: 160,
-    bottom: -72,
-    left: -54,
-    backgroundColor: 'rgba(114,47,55,0.12)',
   },
   liveBadge: {
     position: 'absolute',

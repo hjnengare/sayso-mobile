@@ -15,6 +15,12 @@ type Props = {
   interestId?: string | null;
 };
 
+function getStarColor(rating: number): string {
+  if (rating > 4.0) return '#E6A547';
+  if (rating > 2.0) return '#D4915C';
+  return '#D66B6B';
+}
+
 export function BusinessHeroCarousel({ businessName, images, rating, verified, subcategorySlug, interestId }: Props) {
   const [index, setIndex] = useState(0);
 
@@ -59,7 +65,7 @@ export function BusinessHeroCarousel({ businessName, images, rating, verified, s
       ) : null}
 
       <View style={styles.ratingBadge}>
-        <Ionicons name="star" size={14} color="#F59E0B" />
+        <Ionicons name="star" size={14} color={getStarColor(displayRating)} />
         <Text style={styles.ratingText}>{displayRating > 0 ? displayRating.toFixed(1) : '0.0'}</Text>
       </View>
 

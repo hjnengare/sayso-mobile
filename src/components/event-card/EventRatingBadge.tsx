@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#2D3748',
+    fontWeight: '600',
+    color: '#2D2D2D',
   },
 });

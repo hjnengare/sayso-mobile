@@ -7,7 +7,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -191,14 +191,6 @@ export default function VerifyEmailScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: C.page }]}> 
-      <Stack.Screen options={{ headerShown: false }} />
-
-      <View style={styles.orbLayer} pointerEvents="none">
-        <View style={[styles.orb, styles.orb1]} />
-        <View style={[styles.orb, styles.orb2]} />
-        <View style={[styles.orb, styles.orb3]} />
-      </View>
-
       <View style={[styles.backWrap, { top: insets.top + 8 }]}> 
         <Pressable onPress={() => router.replace(routes.home() as never)} hitSlop={10} style={styles.backBtn}> 
           <Ionicons name="arrow-back" size={22} color={C.charcoal} />
@@ -309,12 +301,6 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
   scroll: { paddingHorizontal: 18 },
-
-  orbLayer: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
-  orb: { position: 'absolute', borderRadius: 999 },
-  orb1: { width: 280, height: 280, top: -90, right: -70, backgroundColor: 'rgba(114,47,55,0.09)' },
-  orb2: { width: 200, height: 200, top: 220, left: -70, backgroundColor: 'rgba(157,171,155,0.14)' },
-  orb3: { width: 150, height: 150, bottom: 80, right: -40, backgroundColor: 'rgba(125,155,118,0.11)' },
 
   backWrap: { position: 'absolute', left: 16, zIndex: 20 },
   backBtn: {

@@ -78,7 +78,7 @@ export function BusinessPhotoGrid({ businessName, photos }: Props) {
           </View>
           
           <View style={styles.emptyHintRow}>
-            <Ionicons name="arrow-down" size={14} color="rgba(45,55,72,0.4)" />
+            <Ionicons name="arrow-down" size={14} color="rgba(45,45,45,0.4)" />
             <Text style={styles.emptyHintText}>Scroll down for similar businesses at the bottom</Text>
           </View>
 
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   emptyBodySubtle: {
-    color: 'rgba(45,55,72,0.5)',
+    color: 'rgba(45,45,45,0.5)',
     fontSize: 12,
     lineHeight: 18,
     textAlign: 'center',
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   emptyHintText: {
-    color: 'rgba(45,55,72,0.4)',
+    color: 'rgba(45,45,45,0.4)',
     fontSize: 12,
     fontWeight: '500',
   },

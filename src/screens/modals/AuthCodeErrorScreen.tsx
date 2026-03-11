@@ -1,5 +1,6 @@
-import { Pressable, SafeAreaView, StyleSheet, View } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../../components/Typography';
 import { routes } from '../../navigation/routes';
@@ -12,7 +13,6 @@ export default function AuthCodeErrorScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.content}>
         <View style={styles.iconWrap}>
           <Ionicons name="alert-circle-outline" size={44} color="#722F37" />

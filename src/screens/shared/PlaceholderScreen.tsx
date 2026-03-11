@@ -1,8 +1,10 @@
-import { SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { Text } from '../../components/Typography';
 import { CARD_CTA_RADIUS, CARD_RADIUS } from '../../styles/radii';
 import { TransitionItem } from '../../components/motion/TransitionItem';
+import { APP_PAGE_GUTTER } from '../../styles/layout';
 
 type Action = {
   label: string;
@@ -50,7 +52,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E0E5',
   },
   content: {
-    padding: 20,
+    paddingHorizontal: APP_PAGE_GUTTER,
+    paddingVertical: 20,
     gap: 12,
   },
   card: {

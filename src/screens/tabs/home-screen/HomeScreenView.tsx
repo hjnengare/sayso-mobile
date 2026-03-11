@@ -1,5 +1,16 @@
 import { memo } from 'react';
-import { Animated, FlatList, RefreshControl, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import {
+  Animated,
+  FlatList,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { BusinessListItemDto, TopReviewerDto } from '@sayso/contracts';
 import { CardSurface } from '../../../components/CardSurface';
@@ -398,7 +409,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 16,
-    paddingHorizontal: 20,
+    paddingHorizontal: homeTokens.pageGutter,
     position: 'relative',
     zIndex: 1,
   },
@@ -416,7 +427,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   searchBarWrap: {
-    marginHorizontal: 16,
+    marginHorizontal: homeTokens.pageGutter,
     height: 60,
     padding: 4,
     overflow: 'visible',

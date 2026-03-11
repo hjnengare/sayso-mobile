@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: 'rgba(255,255,255,0.55)',
     borderWidth: 1,
-    borderColor: 'rgba(45,55,72,0.08)',
+    borderColor: 'rgba(45,45,45,0.08)',
   },
   pillText: {
     color: businessDetailColors.charcoal,

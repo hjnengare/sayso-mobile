@@ -9,15 +9,15 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError, apiFetch } from '../../lib/api';
 import { Text, TextInput } from '../../components/Typography';
 import { StackPageHeader } from '../../components/StackPageHeader';
@@ -35,8 +35,6 @@ import { NAVBAR_BG_COLOR, CARD_BG_COLOR } from '../../styles/colors';
 import { getBusinessPlaceholder } from '../../lib/businessPlaceholders';
 import { BusinessHeroCarousel } from '../../components/business-detail';
 import { normalizeBusinessRating } from '../../components/business-detail/utils';
-import { businessDetailColors } from '../../components/business-detail/styles';
-import { ScrollToTopFab } from '../../components/ScrollToTopFab';
 
 // ─── Constants
 const MIN_CHARS = 10;
@@ -89,6 +87,19 @@ function isPlaceholderImage(url: string | undefined | null): boolean {
   );
 }
 
+function toSingleParam(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+type ExistingReviewDto = {
+  id: string;
+  rating?: number;
+  title?: string | null;
+  content?: string | null;
+  body?: string | null;
+  tags?: string[] | null;
+};
+
 // ─── Colors — brand tokens from src/styles/colors.ts; rest derived inline
 const C = {
   offWhite: '#E5E0E5',
@@ -100,7 +111,7 @@ const C = {
   coral: NAVBAR_BG_COLOR,   // navbar-bg #722F37
   sage: CARD_BG_COLOR,      // card-bg   #9DAB9B
   white: '#FFFFFF',
-  amber: '#F5D547',
+  amber: '#D4915C',
   sageBorder: 'rgba(125,155,118,0.10)',
   cardBg: CARD_BG_COLOR,
   errorBg: 'rgba(114,47,55,0.08)',
@@ -697,7 +708,15 @@ const communityStyles = StyleSheet.create({
 
 // ─── Main screen
 export default function WriteReviewScreen() {
-  const { id, type } = useLocalSearchParams<WriteReviewParams>();
+  const params = useLocalSearchParams<WriteReviewParams>();
+  const id = toSingleParam(params.id) ?? '';
+  const typeParam = toSingleParam(params.type);
+  const reviewId = toSingleParam(params.reviewId);
+  const type: WriteReviewParams['type'] =
+    typeParam === 'business' || typeParam === 'event' || typeParam === 'special'
+      ? typeParam
+      : 'business';
+  const isEditMode = Boolean(reviewId);
   const router = useRouter();
   const qc = useQueryClient();
   const { user } = useAuth();
@@ -748,6 +767,20 @@ export default function WriteReviewScreen() {
   const { data: businessDetail, isLoading: bizLoading } = useBusinessDetail(isBusinessReview ? id : '');
   const { data: eventSpecial, isLoading: esLoading } = useEventSpecialDetail(!isBusinessReview ? id : null);
   const isLoading = isBusinessReview ? bizLoading : esLoading;
+  const reviewPrefilledRef = useRef(false);
+
+  const reviewDetailQuery = useQuery({
+    queryKey: ['review-detail', reviewId],
+    queryFn: () => apiFetch<{ review?: ExistingReviewDto }>(`/api/reviews/${reviewId}`),
+    enabled: Boolean(reviewId),
+    staleTime: 30_000,
+  });
+
+  const existingReviewLoading = isEditMode && !reviewPrefilledRef.current && reviewDetailQuery.isLoading;
+
+  useEffect(() => {
+    reviewPrefilledRef.current = false;
+  }, [reviewId]);
 
   // Realtime: invalidate review + business/event data when the reviews table changes
   const realtimeTargets = useMemo(() => isBusinessReview
@@ -915,10 +948,36 @@ export default function WriteReviewScreen() {
     return () => { active = false; };
   }, []);
 
+  useEffect(() => {
+    if (!isEditMode || reviewPrefilledRef.current) return;
+    const review = reviewDetailQuery.data?.review;
+    if (!review) return;
+
+    setRating(typeof review.rating === 'number' ? review.rating : 0);
+    setReviewTitle((review.title ?? '').trim());
+    setReviewText((review.content ?? review.body ?? '').trim());
+    setSelectedTags(
+      Array.isArray(review.tags)
+        ? review.tags.filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0).slice(0, 4)
+        : []
+    );
+    reviewPrefilledRef.current = true;
+  }, [isEditMode, reviewDetailQuery.data?.review]);
+
+  useEffect(() => {
+    if (!isEditMode || !reviewDetailQuery.error) return;
+    if (reviewDetailQuery.error instanceof ApiError) {
+      setFormError(getErrorMessage({ message: reviewDetailQuery.error.message, code: reviewDetailQuery.error.code }));
+      return;
+    }
+    setFormError('Failed to load review details for editing.');
+  }, [isEditMode, reviewDetailQuery.error]);
+
   const hasContent = rating > 0 || reviewText.trim().length > 0 || reviewTitle.trim().length > 0 ||
     selectedTags.length > 0 || selectedImages.length > 0;
 
-  const isFormValid = rating > 0 && reviewText.trim().length >= MIN_CHARS && !submitting;
+  const isFormValid = rating > 0 && reviewText.trim().length >= MIN_CHARS && !submitting && !existingReviewLoading;
+  const controlsDisabled = submitting || existingReviewLoading;
 
   const handleTagToggle = (tag: string) => {
     setSelectedTags((prev) =>
@@ -978,7 +1037,22 @@ export default function WriteReviewScreen() {
     setSubmitting(true);
 
     try {
-      if (isBusinessReview) {
+      if (isEditMode && reviewId) {
+        const result = await apiFetch<{ message?: string; code?: string; error?: string; success?: boolean }>(
+          `/api/reviews/${reviewId}`,
+          {
+            method: 'PUT',
+            body: JSON.stringify({
+              rating,
+              title: reviewTitle.trim() || null,
+              content: reviewText.trim(),
+              tags: selectedTags,
+            }),
+            timeoutMs: 20_000,
+          }
+        );
+        if (result.success === false) { setFormError(getErrorMessage(result)); return; }
+      } else if (isBusinessReview) {
         const formData = new FormData();
         formData.append('business_id', businessDetail?.id ?? id);
         formData.append('rating', String(rating));
@@ -998,9 +1072,6 @@ export default function WriteReviewScreen() {
           { method: 'POST', body: formData, includeAnonymousIdOnMissingAuth: true, timeoutMs: 20_000 }
         );
         if (result.success === false) { setFormError(getErrorMessage(result)); return; }
-
-        qc.invalidateQueries({ queryKey: ['business-reviews', businessDetail?.id ?? id] });
-        qc.invalidateQueries({ queryKey: ['business', businessDetail?.id ?? id] });
       } else {
         const formData = new FormData();
         formData.append('target_id', id);
@@ -1022,16 +1093,28 @@ export default function WriteReviewScreen() {
           { method: 'POST', body: formData, includeAnonymousIdOnMissingAuth: true, timeoutMs: 20_000 }
         );
         if (result.success === false) { setFormError(getErrorMessage(result)); return; }
+      }
 
+      if (isBusinessReview) {
+        qc.invalidateQueries({ queryKey: ['business-reviews', businessDetail?.id ?? id] });
+        qc.invalidateQueries({ queryKey: ['business', businessDetail?.id ?? id] });
+      } else {
         qc.invalidateQueries({ queryKey: ['event-special-detail', id] });
         qc.invalidateQueries({ queryKey: ['event-reviews', id] });
         qc.invalidateQueries({ queryKey: ['event-ratings', id] });
         qc.invalidateQueries({ queryKey: ['event-related', id] });
       }
 
-      Alert.alert('Review Submitted!', 'Thanks for sharing your experience.', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      qc.invalidateQueries({ queryKey: ['user-reviews'] });
+      qc.invalidateQueries({ queryKey: ['profile'] });
+      qc.invalidateQueries({ queryKey: ['user-stats'] });
+      qc.invalidateQueries({ queryKey: ['user-badges'] });
+
+      Alert.alert(
+        isEditMode ? 'Review Updated' : 'Review Submitted!',
+        isEditMode ? 'Your review changes were saved.' : 'Thanks for sharing your experience.',
+        [{ text: 'OK', onPress: () => router.back() }]
+      );
     } catch (err) {
       if (err instanceof ApiError) { setFormError(getErrorMessage({ message: err.message, code: err.code })); return; }
       setFormError(err instanceof Error ? err.message : 'Failed to submit your review.');
@@ -1073,7 +1156,7 @@ export default function WriteReviewScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, isBusinessReview && { backgroundColor: businessDetailColors.page }]}>
+    <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.safeArea}>
       {!isBusinessReview && (
         <LinearGradient
           colors={['rgba(125,155,118,0.12)', C.offWhite, 'rgba(114,47,55,0.06)']}
@@ -1085,6 +1168,8 @@ export default function WriteReviewScreen() {
       )}
       <Stack.Screen
         options={{
+          headerShown: true,
+          headerShadowVisible: false,
           header: (props) => <StackPageHeader {...props} onPressBack={handleBack} />,
           headerStyle: { backgroundColor: headerCollapsed ? C.coral : C.offWhite },
           headerTintColor: headerCollapsed ? '#FFFFFF' : C.charcoal,
@@ -1183,14 +1268,21 @@ export default function WriteReviewScreen() {
           <View style={styles.formHeader}>
             <Ionicons name="create-outline" size={20} color={C.coral} />
             <View style={styles.formHeaderText}>
-              <Text style={styles.formHeaderTitle}>Write a Review</Text>
-              {displayTitle ? <Text style={styles.formHeaderSub}>Share your experience with {displayTitle}</Text> : null}
+              <Text style={styles.formHeaderTitle}>{isEditMode ? 'Edit Review' : 'Write a Review'}</Text>
+              {displayTitle ? (
+                <Text style={styles.formHeaderSub}>
+                  {isEditMode ? `Update your experience with ${displayTitle}` : `Share your experience with ${displayTitle}`}
+                </Text>
+              ) : null}
             </View>
           </View>
+          {existingReviewLoading ? (
+            <Text style={styles.prefillLabel}>Loading your existing review...</Text>
+          ) : null}
 
           {/* ── Rating — stagger delay 100ms, slide from x:-20 */}
           <Animated.View style={[styles.section, { opacity: sectionAnims[0].opacity, transform: [{ translateX: sectionAnims[0].translateX }] }]}>
-            <RatingSelector value={rating} onChange={(v) => { setFormError(null); setRating(v); }} disabled={submitting} />
+            <RatingSelector value={rating} onChange={(v) => { setFormError(null); setRating(v); }} disabled={controlsDisabled} />
           </Animated.View>
 
           <Divider />
@@ -1200,7 +1292,7 @@ export default function WriteReviewScreen() {
             <TagSelector
               tags={quickTags} selected={selectedTags}
               onToggle={(tag) => { setFormError(null); handleTagToggle(tag); }}
-              disabled={submitting}
+              disabled={controlsDisabled}
             />
           </Animated.View>
 
@@ -1220,7 +1312,7 @@ export default function WriteReviewScreen() {
                 onChangeText={(t) => { setFormError(null); setReviewTitle(t); }}
                 onFocus={() => setTitleFocused(true)} onBlur={() => setTitleFocused(false)}
                 placeholder="Summarize your experience..." placeholderTextColor={C.charcoal30}
-                maxLength={MAX_TITLE_CHARS} editable={!submitting}
+                maxLength={MAX_TITLE_CHARS} editable={!controlsDisabled}
               />
             </Animated.View>
             <Text style={styles.charCount}>{reviewTitle.length}/{MAX_TITLE_CHARS}</Text>
@@ -1241,7 +1333,7 @@ export default function WriteReviewScreen() {
                 onChangeText={(t) => { setFormError(null); setReviewText(t); }}
                 onFocus={() => setTextFocused(true)} onBlur={() => setTextFocused(false)}
                 placeholder="Share your experience with others..." placeholderTextColor={C.charcoal30}
-                multiline textAlignVertical="top" maxLength={MAX_CHARS} editable={!submitting}
+                multiline textAlignVertical="top" maxLength={MAX_CHARS} editable={!controlsDisabled}
               />
               {reviewText.length === 0 && !textFocused ? (
                 <AnimatedTip promptIndex={promptIndex} reducedMotion={reducedMotion} />
@@ -1277,7 +1369,7 @@ export default function WriteReviewScreen() {
                 {selectedImages.map((img, i) => (
                   <View key={i} style={styles.photoThumb}>
                     <Image source={{ uri: img.uri }} style={styles.photoImg} />
-                    <Pressable style={styles.photoRemoveBtn} onPress={() => handleRemoveImage(i)}>
+                    <Pressable style={styles.photoRemoveBtn} onPress={() => handleRemoveImage(i)} disabled={controlsDisabled}>
                       <Ionicons name="close" size={11} color={C.white} />
                     </Pressable>
                   </View>
@@ -1285,7 +1377,7 @@ export default function WriteReviewScreen() {
               </View>
             ) : null}
             {selectedImages.length < MAX_PHOTOS ? (
-              <Pressable style={styles.photoPickerZone} onPress={handlePickImage} disabled={submitting}>
+              <Pressable style={styles.photoPickerZone} onPress={handlePickImage} disabled={controlsDisabled}>
                 <View style={styles.photoPickerIcon}>
                   <Ionicons name="image-outline" size={22} color={C.charcoal60} />
                 </View>
@@ -1310,16 +1402,26 @@ export default function WriteReviewScreen() {
             <Pressable onPress={handleSubmit} disabled={!isFormValid} style={{ width: '100%' }}>
               {isFormValid ? (
                 <LinearGradient colors={[C.coral, 'rgba(114,47,55,0.90)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.submitBtn}>
-                  <Text style={styles.submitText}>{submitting ? 'Submitting...' : 'Submit Review'}</Text>
+                  <Text style={styles.submitText}>
+                    {submitting ? (isEditMode ? 'Saving...' : 'Submitting...') : (isEditMode ? 'Save Changes' : 'Submit Review')}
+                  </Text>
                   {!submitting ? <Ionicons name="send" size={16} color={C.white} /> : null}
                 </LinearGradient>
               ) : (
                 <View style={[styles.submitBtn, styles.submitBtnDisabled]}>
-                  <Text style={[styles.submitText, styles.submitTextDisabled]}>Submit Review</Text>
+                  <Text style={[styles.submitText, styles.submitTextDisabled]}>
+                    {isEditMode ? 'Save Changes' : 'Submit Review'}
+                  </Text>
                 </View>
               )}
             </Pressable>
-            {!isFormValid ? <Text style={styles.invalidHint}>Add a rating and at least 10 characters to submit</Text> : null}
+            {!isFormValid ? (
+              <Text style={styles.invalidHint}>
+                {isEditMode
+                  ? 'Add a rating and at least 10 characters to save'
+                  : 'Add a rating and at least 10 characters to submit'}
+              </Text>
+            ) : null}
           </Animated.View>
 
           </Animated.View>{/* end formCard */}
@@ -1352,13 +1454,12 @@ export default function WriteReviewScreen() {
 
         </ScrollView>
       </KeyboardAvoidingView>
-      <ScrollToTopFab visible={showScrollTopButton} onPress={handleScrollToTop} />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: 'transparent' },
+  safeArea: { flex: 1, backgroundColor: C.offWhite },
   formCard: {
     backgroundColor: C.cardBg,
     borderRadius: 12,
@@ -1376,6 +1477,7 @@ const styles = StyleSheet.create({
   formHeaderText: { flex: 1, gap: 2 },
   formHeaderTitle: { fontSize: 20, fontWeight: '700', color: C.charcoal },
   formHeaderSub: { fontSize: 14, color: C.charcoal60 },
+  prefillLabel: { fontSize: 12, color: C.charcoal60, paddingHorizontal: 4, marginBottom: 8 },
 
   targetCard: { backgroundColor: C.cardBg, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: C.sageBorder },
   targetRow: { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },

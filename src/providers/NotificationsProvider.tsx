@@ -1,5 +1,5 @@
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { NotificationsResponseDto } from '@sayso/contracts';
 import { apiFetch } from '../lib/api';
@@ -14,20 +14,37 @@ interface NotificationsContextValue {
 
 const NotificationsContext = createContext<NotificationsContextValue | undefined>(undefined);
 
-async function registerPushToken() {
+type ExpoNotificationsModule = typeof import('expo-notifications');
+
+function loadNotificationsModule(): ExpoNotificationsModule | null {
+  if (Constants.appOwnership === 'expo') {
+    return null;
+  }
+
+  const runtimeRequire = (globalThis as { require?: (id: string) => unknown }).require;
+  if (!runtimeRequire) return null;
+
+  try {
+    return runtimeRequire('expo-notifications') as ExpoNotificationsModule;
+  } catch {
+    return null;
+  }
+}
+
+async function registerPushToken(notifications: ExpoNotificationsModule) {
   if (!Device.isDevice) return;
 
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  const { status: existingStatus } = await notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
 
   if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
+    const { status } = await notifications.requestPermissionsAsync();
     finalStatus = status;
   }
 
   if (finalStatus !== 'granted') return;
 
-  const token = await Notifications.getExpoPushTokenAsync({ projectId: ENV.easProjectId });
+  const token = await notifications.getExpoPushTokenAsync({ projectId: ENV.easProjectId });
 
   await apiFetch('/api/user/push-tokens', {
     method: 'POST',
@@ -56,9 +73,12 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     if (!user?.id) return;
 
-    registerPushToken().catch((error) => {
-      console.warn('[NotificationsProvider] Push token registration failed:', error);
-    });
+    const notifications = loadNotificationsModule();
+    if (notifications) {
+      registerPushToken(notifications).catch((error) => {
+        console.warn('[NotificationsProvider] Push token registration failed:', error);
+      });
+    }
 
     refresh().catch((error) => {
       console.warn('[NotificationsProvider] Initial refresh failed:', error);

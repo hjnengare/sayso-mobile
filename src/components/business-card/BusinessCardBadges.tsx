@@ -3,6 +3,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { getOverlayShadowStyle } from '../../styles/overlayShadow';
 import { Text } from '../Typography';
 
+// Matches web's Gold (>4.0) / Bronze (>2.0) / Low star gradient tiers
+function getStarColor(rating: number): string {
+  if (rating > 4.0) return '#E6A547'; // Gold
+  if (rating > 2.0) return '#D4915C'; // Bronze
+  return '#D66B6B';                   // Low
+}
+
 type Props = {
   verified?: boolean;
   hasRating: boolean;
@@ -30,7 +37,7 @@ export function BusinessCardBadges({
       <View style={[styles.badge, getOverlayShadowStyle(999), styles.rightBadge]}>
         {hasRating && rating != null ? (
           <>
-            <Ionicons name="star" size={13} color="#F59E0B" />
+            <Ionicons name="star" size={13} color={getStarColor(rating)} />
             <Text style={styles.badgeText}>{rating.toFixed(1)}</Text>
           </>
         ) : (
@@ -80,12 +87,12 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#111827',
+    fontWeight: '600',
+    color: '#2D2D2D',
   },
   distanceText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#111827',
+    color: 'rgba(45,45,45,0.8)',
   },
 });

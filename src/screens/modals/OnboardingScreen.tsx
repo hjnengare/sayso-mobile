@@ -5,7 +5,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { routes } from '../../navigation/routes';
 import { Text } from '../../components/Typography';
@@ -118,16 +118,6 @@ export default function OnboardingScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: C.page }]}>
-      <Stack.Screen options={{ headerShown: false }} />
-
-      {/* Background decoration — clipped to screen bounds */}
-      <View style={styles.orbLayer} pointerEvents="none">
-        <View style={[styles.orb, styles.orb1]} />
-        <View style={[styles.orb, styles.orb2]} />
-        <View style={[styles.orb, styles.orb3]} />
-        <View style={[styles.orb, styles.orb4]} />
-      </View>
-
       {/* Content */}
       <View style={[styles.content, { paddingTop: insets.top + 32, paddingBottom: 24 }]}>
 
@@ -184,14 +174,6 @@ export default function OnboardingScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-
-  // Orbs
-  orbLayer: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
-  orb: { position: 'absolute', borderRadius: 999 },
-  orb1: { width: 300, height: 300, top: -100, right: -80, backgroundColor: 'rgba(114,47,55,0.10)' },
-  orb2: { width: 200, height: 200, top: 180, left: -70, backgroundColor: 'rgba(157,171,155,0.15)' },
-  orb3: { width: 160, height: 160, bottom: 160, right: -50, backgroundColor: 'rgba(125,155,118,0.12)' },
-  orb4: { width: 120, height: 120, bottom: 60, left: 10, backgroundColor: 'rgba(114,47,55,0.07)' },
 
   // Content
   content: {

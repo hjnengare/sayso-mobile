@@ -135,26 +135,26 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 17,
-    fontWeight: '700',
-    color: '#2D3748',
+    fontWeight: '600',
+    color: '#2D2D2D',
     lineHeight: 22,
   },
   description: {
     fontSize: 14,
     lineHeight: 20,
-    color: 'rgba(45, 55, 72, 0.72)',
+    color: 'rgba(45,45,45,0.68)',
     marginTop: 7,
   },
   reviewCount: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#2D3748',
+    fontWeight: '600',
+    color: '#722F37',
     textAlign: 'center',
     marginTop: 10,
   },
   reviewCountEmpty: {
     fontWeight: '400',
-    color: 'rgba(45, 55, 72, 0.85)',
+    color: 'rgba(45,45,45,0.68)',
   },
   ctaButton: {
     marginTop: 12,

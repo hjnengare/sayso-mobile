@@ -10,6 +10,12 @@ type Props = {
   location: string;
 };
 
+function getStarColor(rating: number): string {
+  if (rating > 4.0) return '#E6A547';
+  if (rating > 2.0) return '#D4915C';
+  return '#D66B6B';
+}
+
 export function BusinessInfoBlock({ name, rating, category, location }: Props) {
   return (
     <View style={styles.wrap}>
@@ -17,7 +23,7 @@ export function BusinessInfoBlock({ name, rating, category, location }: Props) {
 
       <View style={styles.metaRow}>
         <View style={styles.metaPill}>
-          <Ionicons name="star" size={13} color="#F59E0B" />
+          <Ionicons name="star" size={13} color={getStarColor(rating)} />
           <Text style={styles.metaText}>{rating > 0 ? rating.toFixed(1) : '0.0'}</Text>
         </View>
 

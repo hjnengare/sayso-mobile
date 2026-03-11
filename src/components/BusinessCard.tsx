@@ -86,6 +86,7 @@ function BusinessCardComponent({ business, style }: Props) {
           category={displayCategoryLabel}
           subInterestId={business.sub_interest_id ?? business.subInterestId ?? categorySlug}
           subInterestLabel={business.subInterestLabel ?? displayCategoryLabel}
+          style={styles.category}
         />
         <Text style={[styles.reviewCount, !hasRating || totalReviews <= 0 ? styles.reviewCountEmpty : null]}>
           {hasRating && totalReviews > 0 ? `${totalReviews} Reviews` : 'Be the first to review'}
@@ -145,24 +146,28 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(157,171,155,0.32)',
   },
   name: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#111827',
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#2D2D2D',
     textAlign: 'center',
-    lineHeight: 28,
+    lineHeight: 22,
+    paddingBottom: 4,
     letterSpacing: -0.2,
     width: '100%',
   },
+  category: {
+    paddingTop: 4,
+  },
   reviewCount: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#374151',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#722F37',
     marginTop: 9,
     textAlign: 'center',
   },
   reviewCountEmpty: {
     fontWeight: '400',
-    color: 'rgba(45, 55, 72, 0.85)',
+    color: 'rgba(45,45,45,0.68)',
   },
   reviewButton: {
     marginTop: 12,

@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../Typography';
 import { getCategoryIconName } from './businessCardUtils';
@@ -7,15 +7,16 @@ type Props = {
   category: string;
   subInterestId?: string;
   subInterestLabel?: string;
+  style?: StyleProp<ViewStyle>;
 };
 
-export function BusinessCardCategory({ category, subInterestId, subInterestLabel }: Props) {
+export function BusinessCardCategory({ category, subInterestId, subInterestLabel, style }: Props) {
   const iconName = getCategoryIconName(category, subInterestId, subInterestLabel);
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, style]}>
       <View style={styles.iconWrap}>
-        <Ionicons name={iconName} size={14} color="rgba(17, 24, 39, 0.7)" />
+        <Ionicons name={iconName} size={14} color="rgba(45,45,45,0.6)" />
       </View>
       <Text numberOfLines={1} style={styles.label}>
         {category}
@@ -44,7 +45,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     fontSize: 12,
     fontWeight: '600',
-    color: 'rgba(17, 24, 39, 0.8)',
+    color: 'rgba(45,45,45,0.72)',
     textAlign: 'center',
   },
 });

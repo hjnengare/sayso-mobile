@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../../../components/Typography';
 import { homeTokens } from './HomeTokens';
 
@@ -63,6 +64,7 @@ export function HomeSectionHeader({ title, actionLabel, onPress, delay = 0 }: Pr
         >
           <TouchableOpacity style={styles.actionButton} onPress={onPress} activeOpacity={0.8}>
             <Text style={styles.action}>{actionLabel}</Text>
+            <Ionicons name="arrow-forward" size={14} color={homeTokens.charcoal} style={styles.actionArrow} />
           </TouchableOpacity>
         </Animated.View>
       ) : null}
@@ -90,10 +92,13 @@ const styles = StyleSheet.create({
     color: homeTokens.charcoal,
   },
   actionButton: {
-    minWidth: 40,
-    minHeight: 40,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    minHeight: 40,
     paddingHorizontal: 6,
+    gap: 2,
+  },
+  actionArrow: {
+    marginTop: 1,
   },
 });

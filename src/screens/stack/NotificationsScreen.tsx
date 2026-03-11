@@ -4,11 +4,11 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
   RefreshControl,
-  SafeAreaView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { useNotificationsList, useMarkAllRead } from '../../hooks/useNotificationsList';
 import { useGlobalScrollToTop } from '../../hooks/useGlobalScrollToTop';
@@ -19,6 +19,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { SkeletonCard } from '../../components/SkeletonCard';
 import { Text } from '../../components/Typography';
 import { TransitionItem } from '../../components/motion/TransitionItem';
+import { APP_PAGE_GUTTER } from '../../styles/layout';
 
 export default function NotificationsScreen() {
   const { user } = useAuthSession();
@@ -93,7 +94,7 @@ export default function NotificationsScreen() {
       </TransitionItem>
 
       {isLoading ? (
-        <View style={{ padding: 16 }}>
+        <View style={{ paddingHorizontal: APP_PAGE_GUTTER, paddingVertical: 16 }}>
           {[1, 2, 3].map((item, index) => (
             <TransitionItem key={item} variant="listItem" index={index + 1}>
               <SkeletonCard />
@@ -137,7 +138,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: APP_PAGE_GUTTER,
     paddingTop: 20,
     paddingBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,

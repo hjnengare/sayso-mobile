@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { HeaderDmBellActions } from './HeaderDmBellActions';
 import { Text } from './Typography';
+import { APP_PAGE_GUTTER } from '../styles/layout';
 
 type Props = {
   title: string;
@@ -26,7 +27,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 16,
-    paddingHorizontal: 20,
+    paddingHorizontal: APP_PAGE_GUTTER,
     paddingTop: 24,
     paddingBottom: 16,
   },

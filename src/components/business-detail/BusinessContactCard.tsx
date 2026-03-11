@@ -151,7 +151,7 @@ export function BusinessContactCard({ businessId, businessName, phone }: Props) 
           placeholder="Name"
           editable={isFormEnabled}
           style={styles.input}
-          placeholderTextColor="rgba(45,55,72,0.45)"
+          placeholderTextColor="rgba(45,45,45,0.45)"
         />
         <TextInput
           value={email}
@@ -161,7 +161,7 @@ export function BusinessContactCard({ businessId, businessName, phone }: Props) 
           keyboardType="email-address"
           autoCapitalize="none"
           style={styles.input}
-          placeholderTextColor="rgba(45,55,72,0.45)"
+          placeholderTextColor="rgba(45,45,45,0.45)"
         />
         <TextInput
           value={mobile}
@@ -170,7 +170,7 @@ export function BusinessContactCard({ businessId, businessName, phone }: Props) 
           editable={isFormEnabled}
           keyboardType="phone-pad"
           style={styles.input}
-          placeholderTextColor="rgba(45,55,72,0.45)"
+          placeholderTextColor="rgba(45,45,45,0.45)"
         />
         <TextInput
           value={message}
@@ -182,7 +182,7 @@ export function BusinessContactCard({ businessId, businessName, phone }: Props) 
           textAlignVertical="top"
           maxLength={500}
           style={styles.messageInput}
-          placeholderTextColor="rgba(45,55,72,0.45)"
+          placeholderTextColor="rgba(45,45,45,0.45)"
         />
 
         <Pressable
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.38)',
   },
   buttonDisabledText: {
-    color: 'rgba(45,55,72,0.45)',
+    color: 'rgba(45,45,45,0.45)',
   },
   hintText: {
     color: businessDetailColors.textSubtle,

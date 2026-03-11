@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   },
   hero: {
     height: 246,
-    backgroundColor: 'rgba(45,55,72,0.22)',
+    backgroundColor: 'rgba(45,45,45,0.22)',
   },
   titleLine: {
     width: '72%',

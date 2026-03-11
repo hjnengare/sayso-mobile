@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, Pressable, StyleSheet, View } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -140,19 +140,11 @@ export default function CompleteScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: '#E5E0E5' }]}>
-      <Stack.Screen options={{ headerShown: false }} />
-
       {/* Confetti particles */}
       <View style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]} pointerEvents="none">
         {PARTICLES.map(p => (
           <Particle key={p.key} delay={p.delay} x={p.x} color={p.color} size={p.size} />
         ))}
-      </View>
-
-      {/* Background decoration — clipped to screen bounds */}
-      <View style={styles.orbLayer} pointerEvents="none">
-        <View style={[styles.orb, styles.orb1]} />
-        <View style={[styles.orb, styles.orb2]} />
       </View>
 
       <View style={[styles.content, { paddingTop: insets.top + 40, paddingBottom: 24 }]}>
@@ -208,11 +200,6 @@ export default function CompleteScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-
-  orbLayer: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
-  orb: { position: 'absolute', borderRadius: 999 },
-  orb1: { width: 300, height: 300, top: -100, right: -80, backgroundColor: 'rgba(114,47,55,0.09)' },
-  orb2: { width: 200, height: 200, bottom: 60, left: -60, backgroundColor: 'rgba(157,171,155,0.14)' },
 
   content: {
     flex: 1, alignItems: 'center', justifyContent: 'center',

@@ -6,6 +6,7 @@ type TransitionScopeContextValue = {
 };
 
 const TransitionScopeContext = createContext<TransitionScopeContextValue | null>(null);
+const SHOULD_WARN_MISSING_TRANSITIONS = __DEV__ && process.env.EXPO_PUBLIC_DEBUG_TRANSITIONS === '1';
 
 export function TransitionScopeProvider({
   routeKey,
@@ -27,7 +28,7 @@ export function TransitionScopeProvider({
 
   useEffect(() => {
     itemCountRef.current = 0;
-    if (!__DEV__) return;
+    if (!SHOULD_WARN_MISSING_TRANSITIONS) return;
 
     const timer = setTimeout(() => {
       if (itemCountRef.current === 0) {

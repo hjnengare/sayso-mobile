@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   },
   pillLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   sagePill: {
     backgroundColor: 'rgba(125, 155, 118, 0.12)',

@@ -16,6 +16,7 @@ type Props = {
   onPressMessages: () => void;
   menuItems: BusinessHeaderMenuItem[];
   collapsed?: boolean;
+  showBackButton?: boolean;
 };
 
 type MenuAnchor = {
@@ -34,6 +35,7 @@ export function BusinessPageHeader({
   onPressMessages,
   menuItems,
   collapsed = false,
+  showBackButton = true,
 }: Props) {
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<MenuAnchor | null>(null);
@@ -89,13 +91,17 @@ export function BusinessPageHeader({
     <View style={styles.wrap}>
       <View style={styles.topRow}>
         <View style={styles.leftSlot}>
-          <Pressable
-            style={[styles.backButton, { backgroundColor: backButtonBg, borderColor: backButtonBorder }]}
-            onPress={onPressBack}
-            accessibilityLabel="Go back"
-          >
-            <Ionicons name="chevron-back" size={22} color={foregroundColor} />
-          </Pressable>
+          {showBackButton ? (
+            <Pressable
+              style={[styles.backButton, { backgroundColor: backButtonBg, borderColor: backButtonBorder }]}
+              onPress={onPressBack}
+              accessibilityLabel="Go back"
+            >
+              <Ionicons name="chevron-back" size={22} color={foregroundColor} />
+            </Pressable>
+          ) : (
+            <View style={styles.backButtonSpacer} />
+          )}
         </View>
 
         <View style={styles.centerSlot}>
@@ -207,6 +213,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
+  backButtonSpacer: {
+    width: 40,
+    height: 40,
+  },
   iconButton: {
     width: 40,
     height: 40,
@@ -244,7 +254,7 @@ const styles = StyleSheet.create({
   },
   menuItemBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(45,55,72,0.1)',
+    borderBottomColor: 'rgba(45,45,45,0.1)',
   },
   menuItemText: {
     color: businessDetailColors.charcoal,

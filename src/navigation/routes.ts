@@ -48,5 +48,6 @@ eventDetail: (id: string) => `/event/${id}`,
   exploreIntent: (id: string) => `/explore/intent/${id}`,
   publicProfile: (username: string) => `/profile/${username}`,
   reviewer: (id: string) => `/reviewer/${id}`,
-  writeReview: (type: ReviewTargetType, id: string) => `/write-review/${type}/${id}`,
+  writeReview: (type: ReviewTargetType, id: string, reviewId?: string) =>
+    reviewId ? `/write-review/${type}/${id}?reviewId=${encodeURIComponent(reviewId)}` : `/write-review/${type}/${id}`,
 } as const;

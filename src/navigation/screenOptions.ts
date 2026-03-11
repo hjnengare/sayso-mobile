@@ -24,6 +24,7 @@ export const fullScreenModalScreenOptions = {
   ...sharedHeaderStyles,
   presentation: Platform.OS === 'web' ? 'card' : 'fullScreenModal',
   animation: 'none',
+  headerShown: false,
   headerShadowVisible: false,
   contentStyle: { backgroundColor: APP_BACKGROUND_COLOR },
 } as const;

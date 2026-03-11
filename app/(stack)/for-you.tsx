@@ -153,7 +153,7 @@ export default function ForYouRoute() {
         <TransitionItem variant="header" index={0}>
           <Text style={styles.heroTitle}>Curated Just For You</Text>
           <Text style={styles.heroDesc}>
-            Businesses tailored to your interests and preferences — a personalised discovery feed for your next outing.
+            A personalised discovery feed for your next outing.
           </Text>
         </TransitionItem>
         <TransitionItem variant="input" index={1}>
@@ -248,7 +248,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '800',
     color: homeTokens.charcoal,
-    textAlign: 'center',
   },
   heroDesc: {
     fontSize: 15,
@@ -256,7 +255,6 @@ const styles = StyleSheet.create({
     color: homeTokens.textSecondary,
     marginTop: 6,
     marginBottom: 2,
-    textAlign: 'center',
   },
   searchWrap: {
     paddingTop: 12,

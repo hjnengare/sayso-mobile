@@ -9,7 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -243,16 +243,6 @@ export default function LoginScreen({ defaultMode = 'login' }: Props) {
 
   return (
     <View style={[styles.root, { backgroundColor: C.page }]}>
-      <Stack.Screen options={{ headerShown: false }} />
-
-      {/* Background decoration */}
-      <View style={styles.orbLayer} pointerEvents="none">
-        <View style={[styles.orb, styles.orb1]} />
-        <View style={[styles.orb, styles.orb2]} />
-        <View style={[styles.orb, styles.orb3]} />
-        <View style={[styles.orb, styles.orb4]} />
-      </View>
-
       {/* Back button */}
       <Animated.View
         style={[
@@ -552,13 +542,6 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
-
-  orbLayer: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
-  orb: { position: 'absolute', borderRadius: 999 },
-  orb1: { width: 260, height: 260, top: -80, right: -60, backgroundColor: 'rgba(114,47,55,0.12)' },
-  orb2: { width: 180, height: 180, top: 140, left: -60, backgroundColor: 'rgba(157,171,155,0.18)' },
-  orb3: { width: 140, height: 140, bottom: 200, right: -40, backgroundColor: 'rgba(125,155,118,0.14)' },
-  orb4: { width: 100, height: 100, bottom: 80, left: 20, backgroundColor: 'rgba(114,47,55,0.08)' },
 
   backBtnWrap: { position: 'absolute', left: 16, zIndex: 20 },
   backBtn: { width: 40, height: 40, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.6)', alignItems: 'center', justifyContent: 'center' },
