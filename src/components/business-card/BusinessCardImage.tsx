@@ -44,8 +44,8 @@ function BusinessCardImageComponent({ imageUri, placeholderUri, isPlaceholder }:
         contentFit="cover"
         cachePolicy="memory-disk"
         recyclingKey={currentUri}
-        transition={150}
-        placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+        transition={180}
+        placeholder={isPlaceholder ? undefined : { blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
         onError={handleError}
       />
       <View style={styles.overlay} pointerEvents="none" />
@@ -63,24 +63,23 @@ export const BusinessCardImage = memo(
 
 const styles = StyleSheet.create({
   wrap: {
-    position: 'relative',
     width: '100%',
     height: '100%',
   },
   image: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#E5E0E5',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.12)',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
   },
   fallback: {
     width: '100%',
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#E5E0E5',
   },
 });

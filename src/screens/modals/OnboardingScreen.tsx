@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import {
   Animated,
+  Easing,
   Pressable,
   StyleSheet,
   View,
@@ -9,12 +10,22 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { routes } from '../../navigation/routes';
 import { Text } from '../../components/Typography';
+import { NAVBAR_BG_COLOR } from '../../styles/colors';
+
+const GRID = 8;
+const TYPE_SCALE = {
+  logo: 26,
+  title: 34,
+  subtitle: 16,
+  cta: 16,
+  auth: 14,
+  tagline: 14,
+} as const;
 
 const C = {
   page: '#E5E0E5',
-  wine: '#722F37',
-  winePressed: '#5a2229',
   charcoal: '#2D2D2D',
+  charcoalSoft: 'rgba(45,45,45,0.72)',
   white: '#FFFFFF',
 };
 
@@ -22,94 +33,77 @@ export default function OnboardingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  // Animated values — one per element for independent stagger
-  const logoScale   = useRef(new Animated.Value(0.82)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const headerOpacity = useRef(new Animated.Value(0)).current;
+  const headerY = useRef(new Animated.Value(GRID * 2)).current;
 
-  const headingY       = useRef(new Animated.Value(26)).current;
-  const headingOpacity = useRef(new Animated.Value(0)).current;
-
-  const subtitleY       = useRef(new Animated.Value(18)).current;
-  const subtitleOpacity = useRef(new Animated.Value(0)).current;
-
-  const ctaScale   = useRef(new Animated.Value(0.92)).current;
-  const ctaY       = useRef(new Animated.Value(14)).current;
+  const ctaScale = useRef(new Animated.Value(0.96)).current;
+  const ctaY = useRef(new Animated.Value(GRID)).current;
   const ctaOpacity = useRef(new Animated.Value(0)).current;
 
-  const authX       = useRef(new Animated.Value(-14)).current;
-  const authOpacity = useRef(new Animated.Value(0)).current;
-
-  const taglineOpacity = useRef(new Animated.Value(0)).current;
-  const taglineY       = useRef(new Animated.Value(8)).current;
+  const loginOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const spring = (val: Animated.Value, toValue: number, delay = 0) =>
-      Animated.spring(val, { toValue, delay, useNativeDriver: true, damping: 18, stiffness: 160 });
+    const easeOut = Easing.out(Easing.cubic);
 
-    const fade = (val: Animated.Value, delay = 0, duration = 360) =>
-      Animated.timing(val, { toValue: 1, delay, duration, useNativeDriver: true });
-
-    const slide = (val: Animated.Value, delay = 0, duration = 380) =>
-      Animated.timing(val, { toValue: 0, delay, duration, useNativeDriver: true });
-
-    // Logo — zoom scale-up at 0ms
+    // Header enters first to establish context.
     Animated.parallel([
-      fade(logoOpacity, 0, 360),
-      spring(logoScale, 1, 0),
+      Animated.timing(headerOpacity, {
+        toValue: 1,
+        duration: 260,
+        easing: easeOut,
+        useNativeDriver: true,
+      }),
+      Animated.timing(headerY, {
+        toValue: 0,
+        duration: 260,
+        easing: easeOut,
+        useNativeDriver: true,
+      }),
     ]).start();
 
-    // Heading — slide-up + fade at 80ms
-    Animated.parallel([
-      fade(headingOpacity, 80, 440),
-      slide(headingY, 80, 440),
-    ]).start();
-
-    // Subtitle — slide-up + fade at 190ms
-    Animated.parallel([
-      fade(subtitleOpacity, 190, 380),
-      slide(subtitleY, 190, 380),
-    ]).start();
-
-    // CTA — spring overshoot pop at 300ms
-    Animated.parallel([
-      fade(ctaOpacity, 300, 280),
-      slide(ctaY, 300, 280),
+    // CTA settles with a subtle spring so focus lands on primary action.
+    Animated.sequence([
+      Animated.delay(120),
       Animated.sequence([
-        Animated.delay(300),
-        Animated.spring(ctaScale, {
-          toValue: 1.03,
-          useNativeDriver: true,
-          damping: 6,
-          stiffness: 240,
-        }),
+        Animated.parallel([
+          Animated.timing(ctaOpacity, {
+            toValue: 1,
+            duration: 200,
+            easing: easeOut,
+            useNativeDriver: true,
+          }),
+          Animated.timing(ctaY, {
+            toValue: 0,
+            duration: 200,
+            easing: easeOut,
+            useNativeDriver: true,
+          }),
+          Animated.spring(ctaScale, {
+            toValue: 1.02,
+            damping: 16,
+            stiffness: 220,
+            mass: 0.8,
+            useNativeDriver: true,
+          }),
+        ]),
         Animated.spring(ctaScale, {
           toValue: 1,
+          damping: 22,
+          stiffness: 260,
           useNativeDriver: true,
-          damping: 14,
-          stiffness: 180,
         }),
       ]),
+      Animated.timing(loginOpacity, {
+        toValue: 1,
+        duration: 180,
+        easing: easeOut,
+        useNativeDriver: true,
+      }),
     ]).start();
-
-    // Auth links — horizontal slide from left at 390ms
-    Animated.parallel([
-      fade(authOpacity, 390, 320),
-      Animated.timing(authX, { toValue: 0, delay: 390, duration: 320, useNativeDriver: true }),
-    ]).start();
-
-    // Tagline — blur dissolve (fade + slide) at 480ms
-    Animated.parallel([
-      fade(taglineOpacity, 480, 420),
-      slide(taglineY, 480, 420),
-    ]).start();
-  }, []);
+  }, [ctaOpacity, ctaScale, ctaY, headerOpacity, headerY, loginOpacity]);
 
   const handleGetStarted = () => {
-    router.replace(('/home?guest=true') as never);
-  };
-
-  const handleSignUp = () => {
-    router.push(routes.register() as never);
+    router.replace(routes.home() as never);
   };
 
   const handleLogIn = () => {
@@ -118,30 +112,41 @@ export default function OnboardingScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: C.page }]}>
-      {/* Content */}
-      <View style={[styles.content, { paddingTop: insets.top + 32, paddingBottom: 24 }]}>
+      <View
+        style={[
+          styles.content,
+          {
+            paddingTop: insets.top + GRID * 6,
+            paddingBottom: insets.bottom + GRID * 4,
+          },
+        ]}
+      >
+        <View style={styles.centerRail}>
+          <Animated.View
+            style={[
+              styles.headerGroup,
+              {
+                opacity: headerOpacity,
+                transform: [{ translateY: headerY }],
+              },
+            ]}
+          >
+            <Text style={styles.logoText}>Sayso</Text>
+            <Text style={styles.title}>Discover gems{'\n'}near you!</Text>
+            <Text style={styles.subtitle}>
+              Explore trusted businesses, leave reviews and see what&apos;s trending around you
+            </Text>
+          </Animated.View>
 
-        {/* Logo wordmark — zoom scale-up */}
-        <Animated.View style={[styles.logoWrap, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}>
-          <Text style={styles.logoText}>Sayso</Text>
-        </Animated.View>
-
-        {/* Title — slide-up + scale */}
-        <Animated.View style={{ opacity: headingOpacity, transform: [{ translateY: headingY }] }}>
-          <Text style={styles.title}>Discover gems{'\n'}near you!</Text>
-        </Animated.View>
-
-        {/* Subtitle — clean slide-up */}
-        <Animated.View style={{ opacity: subtitleOpacity, transform: [{ translateY: subtitleY }] }}>
-          <Text style={styles.subtitle}>
-            Explore trusted businesses, leave reviews and see what's trending around you
-          </Text>
-        </Animated.View>
-
-        {/* CTA + auth links */}
-        <View style={styles.ctaBlock}>
-          {/* Get Started — spring overshoot */}
-          <Animated.View style={{ opacity: ctaOpacity, transform: [{ translateY: ctaY }, { scale: ctaScale }] }}>
+          <Animated.View
+            style={[
+              styles.ctaWrap,
+              {
+                opacity: ctaOpacity,
+                transform: [{ translateY: ctaY }, { scale: ctaScale }],
+              },
+            ]}
+          >
             <Pressable
               style={({ pressed }) => [styles.getStartedBtn, pressed && styles.getStartedBtnPressed]}
               onPress={handleGetStarted}
@@ -150,23 +155,15 @@ export default function OnboardingScreen() {
             </Pressable>
           </Animated.View>
 
-          {/* Sign Up / Log In — horizontal slide from left */}
-          <Animated.View style={[styles.authRow, { opacity: authOpacity, transform: [{ translateX: authX }] }]}>
-            <Pressable onPress={handleSignUp} hitSlop={8}>
-              <Text style={styles.authSignUp}>Sign Up</Text>
-            </Pressable>
-            <Text style={styles.authOr}> or </Text>
+          <Animated.View style={[styles.authRow, { opacity: loginOpacity }]}>
+            <Text style={styles.authHint}>Already have an account? </Text>
             <Pressable onPress={handleLogIn} hitSlop={8}>
               <Text style={styles.authLogIn}>Log In</Text>
             </Pressable>
           </Animated.View>
         </View>
 
-        {/* Tagline — blur dissolve fade */}
-        <Animated.View style={{ opacity: taglineOpacity, transform: [{ translateY: taglineY }] }}>
-          <Text style={styles.tagline}>Less guessing, more confessing</Text>
-        </Animated.View>
-
+        <Text style={styles.tagline}>Less guessing, more confessing</Text>
       </View>
     </View>
   );
@@ -175,72 +172,101 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
 
-  // Content
   content: {
     flex: 1,
+    paddingHorizontal: GRID * 3,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    gap: 24,
+    justifyContent: 'space-between',
   },
 
-  // Logo wordmark
-  logoWrap: { alignItems: 'center', marginBottom: 4 },
+  centerRail: {
+    flex: 1,
+    width: '100%',
+    maxWidth: GRID * 43,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: GRID * 4,
+  },
+
+  headerGroup: {
+    width: '100%',
+    alignItems: 'center',
+    gap: GRID * 2,
+  },
+
   logoText: {
     fontFamily: 'MonarchParadox',
-    fontSize: 56,
-    lineHeight: 64,
-    color: '#2D2D2D',
+    fontSize: TYPE_SCALE.logo,
+    lineHeight: 32,
+    color: C.charcoal,
     letterSpacing: 0.2,
     textTransform: 'none',
   },
 
-  // Title
   title: {
-    fontSize: 34,
+    fontSize: TYPE_SCALE.title,
+    lineHeight: 40,
     fontWeight: '700',
-    color: '#2D2D2D',
+    color: C.charcoal,
     textAlign: 'center',
     letterSpacing: -0.5,
-    lineHeight: 40,
   },
 
-  // Subtitle
   subtitle: {
-    fontSize: 16,
+    maxWidth: GRID * 36,
+    fontSize: TYPE_SCALE.subtitle,
     lineHeight: 24,
-    color: 'rgba(45,45,45,0.70)',
+    color: C.charcoalSoft,
     textAlign: 'center',
-    paddingHorizontal: 8,
     fontWeight: '400',
   },
 
-  // CTA block
-  ctaBlock: { alignItems: 'center', gap: 16, marginTop: 8 },
+  ctaWrap: {
+    width: '100%',
+  },
 
   getStartedBtn: {
-    width: 200,
-    backgroundColor: '#722F37',
+    width: '100%',
     borderRadius: 999,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    backgroundColor: NAVBAR_BG_COLOR,
+    paddingVertical: GRID * 2,
+    paddingHorizontal: GRID * 3,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  getStartedBtnPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
-  getStartedTxt: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+  getStartedBtnPressed: {
+    opacity: 0.96,
+    transform: [{ scale: 0.99 }],
+  },
+  getStartedTxt: {
+    fontSize: TYPE_SCALE.cta,
+    fontWeight: '700',
+    color: C.white,
+  },
 
-  authRow: { flexDirection: 'row', alignItems: 'center' },
-  authSignUp: { fontSize: 14, fontWeight: '700', color: '#2D2D2D' },
-  authOr: { fontSize: 14, color: 'rgba(45,45,45,0.70)', fontWeight: '400' },
-  authLogIn: { fontSize: 14, fontWeight: '700', color: '#722F37' },
+  authRow: {
+    minHeight: GRID * 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  authHint: {
+    fontSize: TYPE_SCALE.auth,
+    color: C.charcoalSoft,
+    fontWeight: '400',
+  },
+  authLogIn: {
+    fontSize: TYPE_SCALE.auth,
+    fontWeight: '700',
+    color: NAVBAR_BG_COLOR,
+  },
 
-  // Tagline
   tagline: {
+    fontSize: TYPE_SCALE.tagline,
+    lineHeight: 24,
     fontStyle: 'italic',
-    fontSize: 14,
     fontWeight: '500',
     color: 'rgba(45,45,45,0.65)',
     textAlign: 'center',
-    marginTop: 8,
   },
 });

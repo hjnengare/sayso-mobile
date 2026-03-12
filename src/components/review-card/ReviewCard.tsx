@@ -6,6 +6,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../Typography';
 import { useAuth } from '../../providers/AuthProvider';
@@ -114,7 +115,12 @@ export function ReviewCard({ review }: { review: ReviewCardData }) {
   const isAnonymous = !review.userId;
 
   return (
-    <View style={styles.card}>
+    <LinearGradient
+      colors={['#9DAB9B', '#9DAB9B', 'rgba(157,171,155,0.95)']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.card}
+    >
       <View style={styles.row}>
         {/* Avatar */}
         <View style={styles.avatarWrap}>
@@ -207,18 +213,20 @@ export function ReviewCard({ review }: { review: ReviewCardData }) {
           </View>
         </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: C.offWhiteBg,
     borderRadius: 8,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: C.sageBorder,
-  },
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    elevation: 3,
+  } as object,
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -270,7 +278,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   name: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: C.charcoal,
     flexShrink: 1,
@@ -301,15 +309,15 @@ const styles = StyleSheet.create({
     color: C.charcoal45,
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: C.charcoal,
   },
   body: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: 'rgba(45,45,45,0.90)',
-    lineHeight: 22,
+    lineHeight: 24,
   },
   tagsRow: {
     flexDirection: 'row',

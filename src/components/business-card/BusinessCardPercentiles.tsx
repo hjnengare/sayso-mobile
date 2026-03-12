@@ -23,10 +23,10 @@ export function BusinessCardPercentiles({ percentiles }: Props) {
 const styles = StyleSheet.create({
   wrap: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    flexWrap: 'wrap',
     gap: 6,
-    marginTop: 10,
+    marginTop: 8,
+    width: '92%',
   },
 });

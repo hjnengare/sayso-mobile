@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -241,14 +242,11 @@ export function ReviewerCard(props: ReviewerCardProps) {
         accessibilityRole="button"
       >
         {/* Top accent */}
-        <View
-          style={[
-            reviewerStyles.accent,
-            {
-              backgroundColor: C.coral,
-              opacity: 0.5,
-            },
-          ]}
+        <LinearGradient
+          colors={['rgba(114,47,55,0.50)', 'rgba(125,155,118,0.60)', 'rgba(114,47,55,0.30)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={reviewerStyles.accent}
         />
 
         <View style={reviewerStyles.body}>
@@ -421,10 +419,21 @@ export function ReviewerCard(props: ReviewerCardProps) {
       accessibilityRole="button"
     >
       {/* Top accent */}
-      <View style={reviewStyles.accent} />
+      <LinearGradient
+        colors={['rgba(114,47,55,0.50)', 'rgba(125,155,118,0.50)', 'rgba(114,47,55,0.30)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={reviewStyles.accent}
+      />
 
       {/* Bottom fade */}
-      <View style={reviewStyles.bottomFade} pointerEvents="none" />
+      <LinearGradient
+        colors={['transparent', C.cardBg]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={reviewStyles.bottomFade}
+        pointerEvents="none"
+      />
 
       <View style={reviewStyles.body}>
         {/* Stars */}
@@ -518,7 +527,7 @@ const reviewerStyles = StyleSheet.create({
   accent: {
     height: 3,
     width: '100%',
-  },
+  } as object,
   body: {
     padding: 16,
     gap: 14,
@@ -657,8 +666,6 @@ const reviewStyles = StyleSheet.create({
   accent: {
     height: 3,
     width: '100%',
-    backgroundColor: C.coral,
-    opacity: 0.5,
   },
   bottomFade: {
     position: 'absolute',
@@ -666,7 +673,6 @@ const reviewStyles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 28,
-    backgroundColor: 'transparent',
     zIndex: 10,
   },
   body: {

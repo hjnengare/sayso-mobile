@@ -1,12 +1,13 @@
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import type { BusinessListItemDto } from '@sayso/contracts';
 import { SkeletonCard } from '../SkeletonCard';
 import { Text } from '../Typography';
 import { useSimilarBusinesses } from '../../hooks/useSimilarBusinesses';
-import { businessDetailColors, businessDetailSpacing } from './styles';
+import { businessDetailColors, businessDetailSpacing, cardShadowStyle } from './styles';
 import { routes } from '../../navigation/routes';
 import {
   getCategoryIconName,
@@ -16,19 +17,11 @@ import {
   getDisplayCategoryLabel,
 } from '../business-card/businessCardUtils';
 
-const IMAGE_HEIGHT = 200;
-const CARD_WIDTH = 290;
+const IMAGE_HEIGHT = 260;
 
 type SimilarBusinessCardProps = {
   business: BusinessListItemDto;
 };
-
-function getStarColor(rating: number | null): string {
-  if (rating == null) return '#D66B6B';
-  if (rating > 4.0) return '#E6A547';
-  if (rating > 2.0) return '#D4915C';
-  return '#D66B6B';
-}
 
 function SimilarBusinessCard({ business }: SimilarBusinessCardProps) {
   const router = useRouter();
@@ -55,7 +48,6 @@ function SimilarBusinessCard({ business }: SimilarBusinessCardProps) {
               contentFit="cover"
               blurRadius={28}
             />
-            <View style={styles.ambientOverlay} />
             <Image
               source={image}
               style={styles.foregroundImage}
@@ -68,6 +60,15 @@ function SimilarBusinessCard({ business }: SimilarBusinessCardProps) {
           <View style={[StyleSheet.absoluteFillObject, styles.imageFallback]} />
         )}
 
+        {/* Depth overlay — subtle gradient, bottom-to-top, matching web's linear-gradient(to top,...) */}
+        <LinearGradient
+          colors={['rgba(0,0,0,0.06)', 'rgba(0,0,0,0.02)', 'transparent']}
+          start={{ x: 0, y: 1 }}
+          end={{ x: 0, y: 0 }}
+          style={StyleSheet.absoluteFillObject}
+          pointerEvents="none"
+        />
+
         {/* Verified badge */}
         {business.verified ? (
           <View style={[styles.badge, styles.badgeTopLeft]}>
@@ -76,11 +77,11 @@ function SimilarBusinessCard({ business }: SimilarBusinessCardProps) {
           </View>
         ) : null}
 
-        {/* Rating badge */}
+        {/* Rating badge — star charcoal-filled, matching web */}
         <View style={[styles.badge, styles.badgeTopRight]}>
           {hasRating && displayRating != null ? (
             <>
-              <Ionicons name="star" size={12} color={getStarColor(displayRating)} />
+              <Ionicons name="star" size={12} color={businessDetailColors.charcoal} />
               <Text style={styles.badgeText}>{displayRating.toFixed(1)}</Text>
             </>
           ) : (
@@ -93,18 +94,22 @@ function SimilarBusinessCard({ business }: SimilarBusinessCardProps) {
       <View style={styles.body}>
         <Text style={styles.name} numberOfLines={1}>{business.name}</Text>
 
-        {/* Meta row */}
-        <View style={styles.metaRow}>
-          <Ionicons name="star" size={11} color={businessDetailColors.coral} />
-          <Text style={styles.metaText}>
-            {hasRating && displayRating != null ? displayRating.toFixed(1) : '—'}
-          </Text>
-          {totalReviews > 0 ? (
-            <Text style={styles.metaText}>
-              {' · '}{totalReviews} {totalReviews === 1 ? 'review' : 'reviews'}
-            </Text>
-          ) : null}
-        </View>
+        {/* Meta row — centered, coral star */}
+        {(hasRating && displayRating != null) || totalReviews > 0 ? (
+          <View style={styles.metaRow}>
+            {hasRating && displayRating != null ? (
+              <View style={styles.metaInner}>
+                <Ionicons name="star" size={11} color={businessDetailColors.coral} />
+                <Text style={styles.metaStrong}>{displayRating.toFixed(1)}</Text>
+              </View>
+            ) : null}
+            {totalReviews > 0 ? (
+              <Text style={styles.metaText}>
+                {hasRating ? ' · ' : ''}{totalReviews} {totalReviews === 1 ? 'review' : 'reviews'}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
 
         {/* Description */}
         {business.description ? (
@@ -121,10 +126,17 @@ function SimilarBusinessCard({ business }: SimilarBusinessCardProps) {
           </Text>
         </View>
 
-        {/* CTA */}
-        <Pressable style={styles.ctaButton} onPress={handlePress}>
-          <Text style={styles.ctaText}>Go to business</Text>
-          <Ionicons name="arrow-forward" size={14} color={businessDetailColors.white} />
+        {/* CTA — LinearGradient matching web's from-navbar-bg to-navbar-bg/90 */}
+        <Pressable onPress={handlePress} style={styles.ctaWrap}>
+          <LinearGradient
+            colors={[businessDetailColors.coral, 'rgba(114,47,55,0.90)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.ctaButton}
+          >
+            <Text style={styles.ctaText}>Go to business</Text>
+            <Ionicons name="arrow-forward" size={14} color={businessDetailColors.white} />
+          </LinearGradient>
         </Pressable>
       </View>
     </Pressable>
@@ -168,24 +180,24 @@ const styles = StyleSheet.create({
   section: {
     marginTop: 8,
     paddingBottom: 8,
-    gap: 10,
+    gap: 24,
   },
   titleWrap: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
+    gap: 4,
   },
   pretitle: {
-    color: businessDetailColors.textSubtle,
+    color: 'rgba(45,45,45,0.70)',
     fontSize: 11,
-    letterSpacing: 1.2,
+    letterSpacing: 1.65,
     textTransform: 'uppercase',
     fontWeight: '700',
   },
   title: {
     color: businessDetailColors.charcoal,
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: 22,
+    fontWeight: '700',
     textAlign: 'center',
   },
   stackedContent: {
@@ -196,27 +208,19 @@ const styles = StyleSheet.create({
   stackedCard: {
     width: '100%',
   },
-  // SimilarBusinessCard styles
+  // ── SimilarBusinessCard ──────────────────────────────────────────────────────
   card: {
     width: '100%',
     borderRadius: businessDetailSpacing.cardRadius,
     overflow: 'hidden',
     backgroundColor: businessDetailColors.cardBg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
-  },
+    ...cardShadowStyle,
+  } as object,
   imageWrap: {
     height: IMAGE_HEIGHT,
     overflow: 'hidden',
     backgroundColor: businessDetailColors.cardBg,
     position: 'relative',
-  },
-  ambientOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.15)',
   },
   foregroundImage: {
     width: '100%',
@@ -232,26 +236,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 3,
     borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: 'rgba(229,224,229,0.95)',
   },
   badgeTopLeft: {
-    top: 10,
-    left: 10,
+    top: 12,
+    left: 12,
   },
   badgeTopRight: {
-    top: 10,
-    right: 10,
+    top: 12,
+    right: 12,
   },
   badgeText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '600',
     color: businessDetailColors.charcoal,
   },
   body: {
-    padding: 14,
-    gap: 6,
+    padding: 16,
+    gap: 8,
   },
   name: {
     fontSize: 17,
@@ -261,28 +265,40 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 2,
+    marginTop: -2,
+  },
+  metaInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  metaStrong: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: businessDetailColors.textMuted,
   },
   metaText: {
     fontSize: 12,
     color: businessDetailColors.textMuted,
   },
   description: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: businessDetailColors.textSubtle,
+    fontSize: 14,
+    lineHeight: 20,
+    color: businessDetailColors.textMuted,
   },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 2,
+    gap: 6,
+    marginTop: 4,
   },
   iconCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: businessDetailColors.charcoal,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(114,47,55,0.50)',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -292,20 +308,25 @@ const styles = StyleSheet.create({
     color: businessDetailColors.textMuted,
     flex: 1,
   },
+  ctaWrap: {
+    marginTop: 12,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
   ctaButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    marginTop: 4,
-    backgroundColor: businessDetailColors.coral,
     borderRadius: 999,
     paddingVertical: 10,
     paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(125,155,118,0.50)',
   },
   ctaText: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
     color: businessDetailColors.white,
   },
 });

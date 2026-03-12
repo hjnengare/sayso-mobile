@@ -13,13 +13,6 @@ export type MapPin = {
   businessId?: string;
 };
 
-export type MapRegion = {
-  latitude: number;
-  longitude: number;
-  latitudeDelta: number;
-  longitudeDelta: number;
-};
-
 type NearbyApiPin = {
   id?: string | number | null;
   latitude?: number | null;
@@ -61,8 +54,6 @@ export const MAP_PREVIEW_HEIGHT = 480;
 export const MAP_ZOOM = 12;
 export const MAX_PINS = 6;
 export const MAP_QUERY_STALE_TIME_MS = 60_000;
-export const MAP_LATITUDE_DELTA = 0.075;
-export const MAP_LONGITUDE_DELTA = 0.11;
 const WEB_MERCATOR_TILE_SIZE = 512;
 const MAX_WEB_MERCATOR_LAT = 85.05112878;
 
@@ -187,27 +178,6 @@ export function buildMapboxStaticUrl(center: MapCenter, pins: MapPin[], mode: Ma
     `${overlay}${toFixedCoordinate(center.lng)},${toFixedCoordinate(center.lat)},${MAP_ZOOM}/` +
     `${MAP_PREVIEW_WIDTH}x${MAP_PREVIEW_HEIGHT}@2x?access_token=${MAPBOX_ACCESS_TOKEN}`
   );
-}
-
-export function buildNativeMapboxTileUrl() {
-  if (!MAPBOX_ACCESS_TOKEN) {
-    return null;
-  }
-
-  return (
-    'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/512/' +
-    '{z}/{x}/{y}@2x?access_token=' +
-    MAPBOX_ACCESS_TOKEN
-  );
-}
-
-export function getMapRegion(center: MapCenter): MapRegion {
-  return {
-    latitude: center.lat,
-    longitude: center.lng,
-    latitudeDelta: MAP_LATITUDE_DELTA,
-    longitudeDelta: MAP_LONGITUDE_DELTA,
-  };
 }
 
 type ProjectedMarker = {

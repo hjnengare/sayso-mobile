@@ -35,6 +35,9 @@ import { NAVBAR_BG_COLOR, CARD_BG_COLOR } from '../../styles/colors';
 import { getBusinessPlaceholder } from '../../lib/businessPlaceholders';
 import { BusinessHeroCarousel } from '../../components/business-detail';
 import { normalizeBusinessRating } from '../../components/business-detail/utils';
+import { CARD_GRADIENT, cardShadowStyle } from '../../components/business-detail/styles';
+
+const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
 // ─── Constants
 const MIN_CHARS = 10;
@@ -1216,7 +1219,7 @@ export default function WriteReviewScreen() {
 
           {/* ── Target info card — only for events/specials (web doesn't show for business) */}
           {!isLoading && displayTitle && !isBusinessReview ? (
-            <View style={styles.targetCard}>
+            <LinearGradient colors={CARD_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.targetCard}>
               <View style={styles.targetRow}>
                 {heroImages.length === 0 && displayImage ? (
                   <Image source={{ uri: displayImage }} style={styles.targetImg} />
@@ -1250,11 +1253,11 @@ export default function WriteReviewScreen() {
                   </View>
                 </View>
               </View>
-            </View>
+            </LinearGradient>
           ) : null}
 
           {/* ── Form card entrance (matches web: opacity 0→1, y 20→0, duration 0.4s) */}
-          <Animated.View style={[styles.formCard, { opacity: formOpacity, transform: [{ translateY: formTranslateY }] }]}>
+          <AnimatedLinearGradient colors={CARD_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.formCard, { opacity: formOpacity, transform: [{ translateY: formTranslateY }] }]}>
 
           {/* ── Anonymous notice — web shows this ABOVE the form header */}
           {!user ? (
@@ -1424,11 +1427,11 @@ export default function WriteReviewScreen() {
             ) : null}
           </Animated.View>
 
-          </Animated.View>{/* end formCard */}
+          </AnimatedLinearGradient>{/* end formCard */}
 
           {/* ── Context card (mobile equivalent of web sidebar) */}
           {!isLoading && displayTitle && !isBusinessReview ? (
-            <View style={styles.contextCard}>
+            <LinearGradient colors={CARD_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.contextCard}>
               <Text style={styles.contextHeading}>
                 {type === 'event' ? 'About this Event' : 'About this Special'}
               </Text>
@@ -1449,7 +1452,7 @@ export default function WriteReviewScreen() {
                 {displayVenue ? <Text style={styles.contextMetaText}>{displayVenue}</Text> : null}
                 {displayValidUntil ? <Text style={styles.contextMetaText}>Valid until {displayValidUntil}</Text> : null}
               </View>
-            </View>
+            </LinearGradient>
           ) : null}
 
         </ScrollView>
@@ -1461,16 +1464,11 @@ export default function WriteReviewScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: C.offWhite },
   formCard: {
-    backgroundColor: C.cardBg,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 12,
-    elevation: 4,
-  },
+    ...cardShadowStyle,
+  } as object,
   content: { paddingHorizontal: 8, paddingTop: 20, paddingBottom: 48, gap: 16 },
 
   formHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingHorizontal: 4, paddingTop: 16, marginBottom: 4 },
@@ -1479,7 +1477,7 @@ const styles = StyleSheet.create({
   formHeaderSub: { fontSize: 14, color: C.charcoal60 },
   prefillLabel: { fontSize: 12, color: C.charcoal60, paddingHorizontal: 4, marginBottom: 8 },
 
-  targetCard: { backgroundColor: C.cardBg, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: C.sageBorder },
+  targetCard: { borderRadius: 12, padding: 16, ...cardShadowStyle } as object,
   targetRow: { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },
   targetImg: { width: 72, height: 72, borderRadius: 10, flexShrink: 0 },
   targetImgFallback: { width: 72, height: 72, borderRadius: 10, backgroundColor: C.charcoal10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
@@ -1533,18 +1531,11 @@ const styles = StyleSheet.create({
   invalidHint: { fontSize: 13, color: 'rgba(45,45,45,0.45)', textAlign: 'center' },
 
   contextCard: {
-    backgroundColor: C.cardBg,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: C.sageBorder,
     padding: 16,
     gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
-  },
+    ...cardShadowStyle,
+  } as object,
   contextHeading: {
     fontSize: 16,
     fontWeight: '700',

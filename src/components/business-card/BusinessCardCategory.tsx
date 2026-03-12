@@ -16,7 +16,7 @@ export function BusinessCardCategory({ category, subInterestId, subInterestLabel
   return (
     <View style={[styles.wrap, style]}>
       <View style={styles.iconWrap}>
-        <Ionicons name={iconName} size={14} color="rgba(45,45,45,0.6)" />
+        <Ionicons name={iconName} size={16} color="rgba(45,45,45,0.70)" />
       </View>
       <Text numberOfLines={1} style={styles.label}>
         {category}
@@ -31,21 +31,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
     maxWidth: '100%',
   },
   iconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.72)',
+    backgroundColor: 'rgba(229, 224, 229, 0.2)',
   },
   label: {
     flexShrink: 1,
     fontSize: 12,
     fontWeight: '600',
-    color: 'rgba(45,45,45,0.72)',
+    color: 'rgba(45,45,45,0.8)',
+    letterSpacing: 0.12,
     textAlign: 'center',
   },
 });

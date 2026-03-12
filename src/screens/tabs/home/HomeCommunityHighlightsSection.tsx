@@ -12,7 +12,6 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import type { FeaturedBusinessDto, RecentReviewDto, TopReviewerDto } from '@sayso/contracts';
-import { CardSurface } from '../../../components/CardSurface';
 import { SkeletonBlock } from '../../../components/SkeletonBlock';
 import { Text } from '../../../components/Typography';
 import { ReviewerCard } from '../../../components/reviewer-card/ReviewerCard';
@@ -191,12 +190,8 @@ export function HomeCommunityHighlightsSection({
             contentContainerStyle={styles.rowContent}
           >
             {[1, 2, 3].map((item) => (
-              <CardSurface
-                key={`reviewer-skeleton-${item}`}
-                radius={16}
-                style={{ width: 240 }}
-                contentStyle={{ minHeight: 260, padding: 16 }}
-              >
+              <View key={`reviewer-skeleton-${item}`} style={styles.reviewerSkeletonCardShell}>
+                <View style={styles.reviewerSkeletonTopAccent} />
                 <View style={styles.reviewerCardSkeleton}>
                   <SkeletonBlock style={styles.reviewerSkeletonAvatar} />
                   <SkeletonBlock style={styles.reviewerSkeletonTitle} />
@@ -208,7 +203,7 @@ export function HomeCommunityHighlightsSection({
                     <SkeletonBlock style={styles.reviewerSkeletonPill} />
                   </View>
                 </View>
-              </CardSurface>
+              </View>
             ))}
           </ScrollView>
         ) : reviewersError ? (
@@ -334,14 +329,30 @@ const styles = StyleSheet.create({
     backgroundColor: homeTokens.offWhite,
   },
   reviewerCardSkeleton: {
-    flex: 1,
-    minHeight: 148,
+    minHeight: 260,
+    padding: 16,
     gap: 10,
+    backgroundColor: homeTokens.cardBg,
+  },
+  reviewerSkeletonCardShell: {
+    width: 240,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: homeTokens.cardBg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 6,
+  },
+  reviewerSkeletonTopAccent: {
+    height: 3,
+    backgroundColor: 'rgba(125,155,118,0.42)',
   },
   reviewerSkeletonAvatar: {
     width: 56,
     height: 56,
-    borderRadius: 12,
+    borderRadius: 999,
   },
   reviewerSkeletonTitle: {
     width: '72%',

@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View, ScrollView } from 'react-native';
+import { Animated, Easing, StyleSheet, View, ScrollView, useWindowDimensions } from 'react-native';
 import type { EventSpecialListItemDto } from '@sayso/contracts';
 import { EventCard } from '../../../components/EventCard';
 import { EventCardSkeleton } from '../../../components/EventCardSkeleton';
@@ -10,9 +10,10 @@ import { CARD_RADIUS } from '../../../styles/radii';
 type AnimatedEventCardProps = {
   index: number;
   item: EventSpecialListItemDto;
+  cardWidth: number;
 };
 
-const AnimatedEventCard = memo(function AnimatedEventCard({ index, item }: AnimatedEventCardProps) {
+const AnimatedEventCard = memo(function AnimatedEventCard({ index, item, cardWidth }: AnimatedEventCardProps) {
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -37,7 +38,7 @@ const AnimatedEventCard = memo(function AnimatedEventCard({ index, item }: Anima
         ],
       }}
     >
-      <EventCard item={item} style={styles.cardWrap} />
+      <EventCard item={item} style={[styles.cardWrap, { width: cardWidth }]} />
     </Animated.View>
   );
 });
@@ -49,6 +50,9 @@ type Props = {
 };
 
 export function HomeEventsSpecialsRow({ items, loading, error }: Props) {
+  const { width: windowWidth } = useWindowDimensions();
+  const cardWidth = windowWidth - homeTokens.pageGutter - 14 - 40;
+
   if (loading) {
     return (
       <ScrollView
@@ -58,7 +62,7 @@ export function HomeEventsSpecialsRow({ items, loading, error }: Props) {
         contentContainerStyle={styles.content}
       >
         {[1, 2, 3].map((item) => (
-          <View key={`event-skeleton-${item}`} style={styles.cardWrap}>
+          <View key={`event-skeleton-${item}`} style={[styles.cardWrap, { width: cardWidth }]}>
             <EventCardSkeleton />
           </View>
         ))}
@@ -85,7 +89,7 @@ export function HomeEventsSpecialsRow({ items, loading, error }: Props) {
       contentContainerStyle={styles.content}
     >
       {items.map((item, index) => (
-        <AnimatedEventCard key={`${item.type}-${item.id}`} index={index} item={item} />
+        <AnimatedEventCard key={`${item.type}-${item.id}`} index={index} item={item} cardWidth={cardWidth} />
       ))}
     </ScrollView>
   );
@@ -104,7 +108,7 @@ const styles = StyleSheet.create({
     backgroundColor: homeTokens.offWhite,
   },
   cardWrap: {
-    width: 320,
+    width: 340,
   },
   messageCard: {
     marginHorizontal: homeTokens.pageGutter,

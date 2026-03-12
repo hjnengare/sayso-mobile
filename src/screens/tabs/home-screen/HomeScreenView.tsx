@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import {
   Animated,
   FlatList,
@@ -22,6 +22,7 @@ import { HomeCommunityHighlightsSection } from '../home/HomeCommunityHighlightsS
 import { HomeEventsSpecialsRow } from '../home/HomeEventsSpecialsRow';
 import { HomeSearchBar } from '../home/HomeSearchBar';
 import { HomeSearchResults } from '../home/HomeSearchResults';
+import { HomeSearchSuggestions } from '../home/HomeSearchSuggestions';
 import { HomeSectionHeader } from '../home/HomeSectionHeader';
 import { homeTokens } from '../home/HomeTokens';
 import { FROSTED_CARD_BORDER_COLOR } from '../../../styles/cardSurface';
@@ -94,6 +95,8 @@ type Props = {
     isLoading: boolean;
     error: string | null;
   };
+  activeFilterCount: number;
+  onSelectSuggestion: (businessId: string) => void;
   navigateToReviewer: (reviewer: TopReviewerDto) => void;
   onNavigateForYou: () => void;
   onNavigateTrending: () => void;
@@ -143,6 +146,8 @@ function HomeScreenViewComponent({
   reviewers,
   recentReviews,
   featured,
+  activeFilterCount,
+  onSelectSuggestion,
   navigateToReviewer,
   onNavigateForYou,
   onNavigateTrending,
@@ -152,6 +157,10 @@ function HomeScreenViewComponent({
   onNavigateBadges,
   onNavigateOnboarding,
 }: Props) {
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const showSuggestions = searchFocused && searchInput.length >= 2;
+
   return (
     <SafeAreaView style={styles.container}>
       <Animated.View
@@ -162,6 +171,7 @@ function HomeScreenViewComponent({
             paddingBottom: headerPaddingBottom,
           },
         ]}
+        onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}
       >
         <Animated.View
           pointerEvents="none"
@@ -204,12 +214,35 @@ function HomeScreenViewComponent({
             <HomeSearchBar
               value={searchInput}
               onChangeText={setSearchInput}
-              onClear={() => setSearchInput('')}
+              onClear={() => { setSearchInput(''); setSearchFocused(false); }}
               isFetching={isSearchActive && searchIsFetching}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setTimeout(() => setSearchFocused(false), 100)}
+              activeFilterCount={activeFilterCount}
             />
           </TransitionItem>
         </Animated.View>
       </Animated.View>
+
+      {/* Live suggestions overlay — absolute, sits above content below header */}
+      {showSuggestions ? (
+        <View
+          style={[styles.suggestionsOverlay, { top: headerHeight - 8 }]}
+          pointerEvents="box-none"
+        >
+          <HomeSearchSuggestions
+            query={searchInput}
+            onSelect={(id) => {
+              setSearchFocused(false);
+              onSelectSuggestion(id);
+            }}
+            onSelectQuery={(q) => {
+              setSearchFocused(false);
+              setSearchInput(q);
+            }}
+          />
+        </View>
+      ) : null}
 
       {isSearchActive ? (
         <TransitionItem variant="card" index={2} style={styles.flexOne}>
@@ -389,7 +422,7 @@ const styles = StyleSheet.create({
   headerWrap: {
     backgroundColor: homeTokens.offWhite,
     position: 'relative',
-    overflow: 'hidden',
+    zIndex: 20,
   },
   headerMaterial: {
     ...StyleSheet.absoluteFillObject,
@@ -432,7 +465,13 @@ const styles = StyleSheet.create({
     padding: 4,
     overflow: 'visible',
     position: 'relative',
-    zIndex: 1,
+    zIndex: 30,
+  },
+  suggestionsOverlay: {
+    position: 'absolute',
+    left: homeTokens.pageGutter,
+    right: homeTokens.pageGutter,
+    zIndex: 100,
   },
   content: {
     backgroundColor: homeTokens.offWhite,

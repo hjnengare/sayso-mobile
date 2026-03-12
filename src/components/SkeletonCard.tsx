@@ -1,37 +1,74 @@
 import { StyleSheet, View } from 'react-native';
-import { CardSurface } from './CardSurface';
+import { LinearGradient } from 'expo-linear-gradient';
 import { CARD_CTA_RADIUS, CARD_RADIUS } from '../styles/radii';
 import { SkeletonBlock } from './SkeletonBlock';
 
+const CARD_GRADIENT = ['#9DAB9B', '#9DAB9B', 'rgba(157,171,155,0.95)'] as const;
+
 export function SkeletonCard() {
   return (
-    <CardSurface radius={CARD_RADIUS} material="frosted" contentStyle={styles.frostedSurface}>
-      <SkeletonBlock style={styles.image} variant="strong" />
-      <View style={styles.body}>
-        <SkeletonBlock style={styles.titleLine} />
-        <SkeletonBlock style={styles.subtitleLine} />
-        <SkeletonBlock style={styles.ratingLine} />
-        <SkeletonBlock style={styles.detailLine} />
-        <SkeletonBlock style={styles.cta} variant="strong" />
-      </View>
-    </CardSurface>
+    <View style={styles.card}>
+      <LinearGradient colors={CARD_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cardSurface}>
+        <SkeletonBlock style={styles.image} variant="strong">
+          <SkeletonBlock style={styles.badge} variant="soft" />
+          <SkeletonBlock style={styles.ratingBadge} />
+        </SkeletonBlock>
+        <View style={styles.body}>
+          <SkeletonBlock style={styles.titleLine} />
+          <SkeletonBlock style={styles.subtitleLine} />
+          <SkeletonBlock style={styles.ratingLine} />
+          <View style={styles.pillRow}>
+            <SkeletonBlock style={styles.pill} />
+            <SkeletonBlock style={[styles.pill, styles.pillShort]} />
+          </View>
+          <SkeletonBlock style={styles.cta} variant="strong" />
+        </View>
+      </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  frostedSurface: {
-    backgroundColor: 'rgba(157,171,155,0.72)',
+  card: {
+    borderRadius: CARD_RADIUS,
+    overflow: 'hidden',
+    backgroundColor: '#9DAB9B',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 6,
+  },
+  cardSurface: {
+    width: '100%',
   },
   image: {
+    position: 'relative',
     width: '100%',
-    height: 220,
+    height: 280,
+  },
+  badge: {
+    position: 'absolute',
+    top: 14,
+    left: 14,
+    width: 22,
+    height: 22,
+    borderRadius: 999,
+  },
+  ratingBadge: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    width: 56,
+    height: 28,
+    borderRadius: 999,
   },
   body: {
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 14,
     alignItems: 'center',
-    backgroundColor: 'rgba(157,171,155,0.32)',
+    backgroundColor: 'rgba(157,171,155,0.10)',
   },
   titleLine: {
     height: 22,
@@ -50,11 +87,20 @@ const styles = StyleSheet.create({
     width: '34%',
     marginTop: 8,
   },
-  detailLine: {
+  pillRow: {
+    width: '100%',
+    marginTop: 10,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  pill: {
     height: 22,
     borderRadius: 11,
-    width: '64%',
-    marginTop: 10,
+    width: 118,
+  },
+  pillShort: {
+    width: 82,
   },
   cta: {
     marginTop: 12,

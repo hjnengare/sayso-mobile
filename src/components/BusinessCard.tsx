@@ -1,5 +1,6 @@
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { Platform, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import type { BusinessListItemDto } from '@sayso/contracts';
 import { routes } from '../navigation/routes';
@@ -8,7 +9,6 @@ import { markRouteTransitionStart } from '../lib/perf/perfMarkers';
 import { prefetchRouteIntent } from '../lib/perf/prefetchRouteIntent';
 import { getOverlayShadowStyle } from '../styles/overlayShadow';
 import { CARD_CTA_RADIUS, CARD_RADIUS } from '../styles/radii';
-import { CardSurface } from './CardSurface';
 import { Text } from './Typography';
 import { BusinessCardBadges } from './business-card/BusinessCardBadges';
 import { BusinessCardCategory } from './business-card/BusinessCardCategory';
@@ -28,7 +28,46 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
+type WebViewStyle = ViewStyle & {
+  boxShadow?: string;
+};
+
 const ctaShadowStyle = getOverlayShadowStyle(CARD_CTA_RADIUS);
+const CARD_GRADIENT = ['#9DAB9B', '#9DAB9B', 'rgba(157,171,155,0.95)'] as const;
+const CTA_GRADIENT = ['#722F37', 'rgba(114,47,55,0.90)'] as const;
+const cardShadowStyle: ViewStyle =
+  Platform.OS === 'web'
+    ? ({
+        boxShadow: '0 8px 20px rgba(0, 0, 0, 0.12)',
+      } as WebViewStyle)
+    : {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.12,
+        shadowRadius: 20,
+        elevation: 6,
+      };
+
+function getDistanceBadgeText(business: BusinessListItemDto): string | null {
+  const raw = (business as BusinessListItemDto & { distance?: number | string | null }).distance;
+  if (raw == null) {
+    return null;
+  }
+
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    if (raw <= 0) return null;
+    return `${raw.toFixed(raw < 10 ? 1 : 0)} km away`;
+  }
+
+  const normalized = String(raw).trim();
+  if (!normalized) {
+    return null;
+  }
+  if (/away$/i.test(normalized) || /km/i.test(normalized)) {
+    return normalized;
+  }
+  return `${normalized} away`;
+}
 
 function BusinessCardComponent({ business, style }: Props) {
   const router = useRouter();
@@ -39,6 +78,8 @@ function BusinessCardComponent({ business, style }: Props) {
   const { hasRating, displayRating, totalReviews } = normalizeRating(business);
   const { image, isPlaceholder, placeholderImage } = resolveDisplayImage(business);
   const isFeaturedCard = String(business.badge ?? '').toLowerCase() === 'featured';
+  const distanceBadgeText = useMemo(() => getDistanceBadgeText(business), [business]);
+  const ctaLabel = isFeaturedCard ? 'Review' : 'View Details';
 
   const handlePressIn = useCallback(() => {
     prefetchRouteIntent(`business:${businessIdentifier}`, {
@@ -60,65 +101,80 @@ function BusinessCardComponent({ business, style }: Props) {
   }, [businessIdentifier, href, router]);
 
   return (
-    <CardSurface
-      radius={CARD_RADIUS}
-      material="frosted"
-      style={style}
-      contentStyle={Platform.OS !== 'web' ? styles.frostedSurface : undefined}
-      interactive
+    <Pressable
+      style={({ pressed }) => [styles.card, cardShadowStyle, style, pressed ? styles.cardPressed : null]}
       onPress={handleNavigate}
       onPressIn={handlePressIn}
+      accessibilityRole="button"
+      accessibilityLabel={`View ${business.name} details`}
     >
-      <View style={styles.media}>
-        <BusinessCardImage imageUri={image} placeholderUri={placeholderImage} isPlaceholder={isPlaceholder} />
-        <BusinessCardBadges
-          verified={business.verified}
-          hasRating={hasRating}
-          rating={displayRating}
-        />
-      </View>
+      <LinearGradient colors={CARD_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cardGradient}>
+        <View style={styles.media}>
+          <BusinessCardImage imageUri={image} placeholderUri={placeholderImage} isPlaceholder={isPlaceholder} />
+          <BusinessCardBadges
+            verified={business.verified}
+            hasRating={hasRating}
+            rating={displayRating}
+            distanceBadgeText={distanceBadgeText}
+          />
+        </View>
 
-      <View style={[styles.body, Platform.OS !== 'web' ? styles.bodyFrosted : null]}>
-        <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">
-          {business.name}
-        </Text>
-        <BusinessCardCategory
-          category={displayCategoryLabel}
-          subInterestId={business.sub_interest_id ?? business.subInterestId ?? categorySlug}
-          subInterestLabel={business.subInterestLabel ?? displayCategoryLabel}
-          style={styles.category}
-        />
-        <Text style={[styles.reviewCount, !hasRating || totalReviews <= 0 ? styles.reviewCountEmpty : null]}>
-          {hasRating && totalReviews > 0 ? `${totalReviews} Reviews` : 'Be the first to review'}
-        </Text>
-        {isFeaturedCard ? (
-          <BusinessCardReviewStars rating={hasRating ? displayRating : 0} />
-        ) : (
-          <BusinessCardPercentiles percentiles={business.percentiles} />
-        )}
+        <View style={styles.body}>
+          <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">
+            {business.name}
+          </Text>
+          <BusinessCardCategory
+            category={displayCategoryLabel}
+            subInterestId={business.sub_interest_id ?? business.subInterestId ?? categorySlug}
+            subInterestLabel={business.subInterestLabel ?? displayCategoryLabel}
+            style={styles.category}
+          />
+          <View style={styles.reviewRow}>
+            {hasRating && totalReviews > 0 ? (
+              <>
+                <Text style={styles.reviewCountNumber}>{totalReviews}</Text>
+                <Text style={styles.reviewCountLabel}>Reviews</Text>
+              </>
+            ) : (
+              <Text style={styles.reviewCountEmpty}>Be the first to review</Text>
+            )}
+          </View>
+          {isFeaturedCard ? (
+            <BusinessCardReviewStars rating={hasRating ? displayRating : 0} />
+          ) : (
+            <BusinessCardPercentiles percentiles={business.percentiles} />
+          )}
 
-        <Pressable
-          style={({ pressed }) => [styles.reviewButton, ctaShadowStyle, pressed ? styles.reviewButtonPressed : null]}
-          onPress={(event) => {
-            event.stopPropagation();
-            prefetchRouteIntent(`business:${businessIdentifier}`, {
-              href,
-              router: router as unknown as { prefetch?: (path: string) => Promise<void> | void },
-              queryKeys: [
-                {
-                  queryKey: getBusinessDetailQueryKey(businessIdentifier),
-                  queryFn: () => fetchBusinessDetail(businessIdentifier),
-                  staleTime: 120_000,
-                },
-              ],
-            });
-            handleNavigate();
-          }}
-        >
-          <Text style={styles.reviewButtonText}>{isFeaturedCard ? 'Review' : 'View Details'}</Text>
-        </Pressable>
-      </View>
-    </CardSurface>
+          <Pressable
+            style={({ pressed }) => [styles.reviewButton, ctaShadowStyle, pressed ? styles.reviewButtonPressed : null]}
+            onPress={(event) => {
+              event.stopPropagation();
+              prefetchRouteIntent(`business:${businessIdentifier}`, {
+                href,
+                router: router as unknown as { prefetch?: (path: string) => Promise<void> | void },
+                queryKeys: [
+                  {
+                    queryKey: getBusinessDetailQueryKey(businessIdentifier),
+                    queryFn: () => fetchBusinessDetail(businessIdentifier),
+                    staleTime: 120_000,
+                  },
+                ],
+              });
+              handleNavigate();
+            }}
+          >
+            <LinearGradient
+              colors={CTA_GRADIENT}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.reviewButtonGradient}
+            >
+              <Text style={styles.reviewButtonText}>{ctaLabel}</Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
+      </LinearGradient>
+    </Pressable>
   );
 }
 
@@ -128,63 +184,86 @@ export const BusinessCard = memo(
 );
 
 const styles = StyleSheet.create({
-  frostedSurface: {
-    backgroundColor: 'rgba(157,171,155,0.72)',
+  card: {
+    borderRadius: CARD_RADIUS,
+    overflow: 'hidden',
+    backgroundColor: '#9DAB9B',
+  },
+  cardGradient: {
+    width: '100%',
   },
   media: {
     width: '100%',
-    height: 220,
-    backgroundColor: '#F3F4F6',
+    height: 280,
+    backgroundColor: '#E5E0E5',
   },
   body: {
-    paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 14,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 10,
     alignItems: 'center',
-  },
-  bodyFrosted: {
-    backgroundColor: 'rgba(157,171,155,0.32)',
+    backgroundColor: 'rgba(157,171,155,0.10)',
   },
   name: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 19,
+    fontWeight: '700',
     color: '#2D2D2D',
     textAlign: 'center',
-    lineHeight: 22,
-    paddingBottom: 4,
-    letterSpacing: -0.2,
+    lineHeight: 25,
+    letterSpacing: -0.18,
     width: '100%',
   },
   category: {
-    paddingTop: 4,
+    marginTop: 2,
   },
-  reviewCount: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#722F37',
+  reviewRow: {
     marginTop: 9,
-    textAlign: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    minHeight: 17,
+  },
+  reviewCountNumber: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#722F37',
+  },
+  reviewCountLabel: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#722F37',
   },
   reviewCountEmpty: {
+    fontSize: 14,
     fontWeight: '400',
     color: 'rgba(45,45,45,0.68)',
   },
   reviewButton: {
     marginTop: 12,
-    minHeight: 46,
+    minHeight: 48,
     borderRadius: CARD_CTA_RADIUS,
-    backgroundColor: '#722F37',
     width: '100%',
+    overflow: 'hidden',
+  },
+  reviewButtonGradient: {
+    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
+    borderRadius: CARD_CTA_RADIUS,
+    borderWidth: 1,
+    borderColor: 'rgba(125,155,118,0.5)',
+  },
+  cardPressed: {
+    opacity: 0.96,
   },
   reviewButtonPressed: {
-    opacity: 0.92,
+    opacity: 0.96,
   },
   reviewButtonText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#FFFFFF',
   },
 });

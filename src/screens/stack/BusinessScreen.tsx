@@ -26,7 +26,6 @@ import {
   BusinessPhotoGrid,
   BusinessReviewsSection,
   BusinessScreenSkeleton,
-  ContactBusinessModal,
   type BusinessHeaderMenuItem,
   PersonalizationInsightsCard,
   SimilarBusinessesSection,
@@ -129,31 +128,13 @@ export default function BusinessScreen({ initialTab }: Props) {
 
   const isBusinessOwner = Boolean(user && business?.owner_id && user.id === business.owner_id);
 
-  // Trigger contact modal after business loads and animations settle
-  useEffect(() => {
-    if (business && !contactModalTriggered.current && !isLoading && !isBusinessOwner) {
-      contactModalTriggered.current = true;
-      const timer = setTimeout(() => {
-        setShowContactModal(true);
-      }, 2500); // Show after reveal animations are mostly complete
-
-      return () => clearTimeout(timer);
-    }
-  }, [business, isLoading, isBusinessOwner]);
-
-  const handleCloseContactModal = () => {
-    setShowContactModal(false);
-  };
-
   const headerProgress = useRef(new Animated.Value(0)).current;
   const headerCollapsedRef = useRef(false);
   const scrollRef = useRef<ScrollView | null>(null);
   const scrollTopVisibleRef = useRef(false);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [showScrollTopButton, setShowScrollTopButton] = useState(false);
-  const [showContactModal, setShowContactModal] = useState(false);
   const [showDeferredSections, setShowDeferredSections] = useState(false);
-  const contactModalTriggered = useRef(false);
 
   useEffect(() => {
     setShowDeferredSections(false);
@@ -392,16 +373,6 @@ export default function BusinessScreen({ initialTab }: Props) {
           </TransitionItem>
         ) : null}
       </ScrollView>
-
-      <ContactBusinessModal
-        visible={showContactModal}
-        businessName={business.name}
-        businessPhone={business.phone}
-        businessEmail={business.email}
-        businessWebsite={business.website}
-        onClose={handleCloseContactModal}
-        onPressReview={handleLeaveReview}
-      />
     </SafeAreaView>
   );
 }

@@ -1,7 +1,8 @@
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../Typography';
-import { businessDetailColors, businessDetailSpacing } from './styles';
+import { businessDetailColors, businessDetailSpacing, CARD_GRADIENT, cardShadowStyle } from './styles';
 import { normalizeWebsite } from './utils';
 
 type Props = {
@@ -18,17 +19,17 @@ export function BusinessContactInfoCard({ phone, email, website, address, locati
   const addressText = address || location || null;
 
   return (
-    <View style={styles.card}>
+    <LinearGradient colors={CARD_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.card}>
       <View style={styles.row}>
         <View style={styles.iconPill}>
-          <Ionicons name="call" size={14} color={businessDetailColors.charcoal} />
+          <Ionicons name="call" size={15} color={businessDetailColors.charcoal} />
         </View>
         {displayPhone ? <Text style={styles.valueText}>{displayPhone}</Text> : <Text style={styles.valueFallback}>Phone number coming soon</Text>}
       </View>
 
       <View style={styles.row}>
         <View style={styles.iconPill}>
-          <Ionicons name="mail" size={14} color={businessDetailColors.charcoal} />
+          <Ionicons name="mail" size={15} color={businessDetailColors.charcoal} />
         </View>
         {email ? (
           <Pressable onPress={() => Linking.openURL(`mailto:${email}`)}>
@@ -41,7 +42,7 @@ export function BusinessContactInfoCard({ phone, email, website, address, locati
 
       <View style={styles.row}>
         <View style={styles.iconPill}>
-          <Ionicons name="globe" size={14} color={businessDetailColors.charcoal} />
+          <Ionicons name="globe" size={15} color={businessDetailColors.charcoal} />
         </View>
         {websiteHref ? (
           <Pressable onPress={() => Linking.openURL(websiteHref)}>
@@ -54,32 +55,29 @@ export function BusinessContactInfoCard({ phone, email, website, address, locati
 
       <View style={styles.row}>
         <View style={styles.iconPill}>
-          <Ionicons name="location" size={14} color={businessDetailColors.charcoal} />
+          <Ionicons name="location" size={15} color={businessDetailColors.charcoal} />
         </View>
         {addressText ? <Text style={styles.valueText}>{addressText}</Text> : <Text style={styles.valueFallback}>Address coming soon</Text>}
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
     borderRadius: businessDetailSpacing.cardRadius,
-    borderWidth: 1,
-    borderColor: businessDetailColors.borderSoft,
-    backgroundColor: businessDetailColors.cardTint,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    gap: 8,
-  },
+    padding: businessDetailSpacing.cardPadding,
+    gap: 12,
+    ...cardShadowStyle,
+  } as object,
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
   iconPill: {
-    width: 30,
-    height: 30,
+    width: 32,
+    height: 32,
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
@@ -87,15 +85,14 @@ const styles = StyleSheet.create({
   },
   valueText: {
     color: businessDetailColors.charcoal,
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 20,
     flex: 1,
-    fontStyle: 'italic',
   },
   valueFallback: {
     color: businessDetailColors.textMuted,
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 20,
     fontStyle: 'italic',
     flex: 1,
   },

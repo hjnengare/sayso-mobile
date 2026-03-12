@@ -5,7 +5,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { OnboardingLayout } from '../../components/onboarding/OnboardingLayout';
+import { ONBOARDING_GRADIENTS, ONBOARDING_TOKENS } from '../../components/onboarding/onboardingTheme';
 import { Text } from '../../components/Typography';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { apiFetch } from '../../lib/api';
 import { routes } from '../../navigation/routes';
 
@@ -56,6 +58,7 @@ const DEALBREAKER_ICONS: Record<DealbreakerId, DealbreakerIconName> = {
 
 export default function DealBreakersScreen() {
   const router = useRouter();
+  const reducedMotion = useReducedMotion();
   const [selected, setSelected] = useState<Set<DealbreakerId>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -109,6 +112,16 @@ export default function DealBreakersScreen() {
   }, []);
 
   useEffect(() => {
+    if (reducedMotion) {
+      badgeOpacity.setValue(1);
+      badgeY.setValue(0);
+      cardAnims.forEach((anim) => {
+        anim.opacity.setValue(1);
+        anim.y.setValue(0);
+      });
+      return;
+    }
+
     const ease = Easing.out(Easing.ease);
 
     Animated.parallel([
@@ -120,11 +133,11 @@ export default function DealBreakersScreen() {
       const delay = index * 100;
       const anim = cardAnims[index];
       Animated.parallel([
-        Animated.timing(anim.opacity, { toValue: 1, delay, duration: 600, easing: ease, useNativeDriver: true }),
-        Animated.timing(anim.y, { toValue: 0, delay, duration: 600, easing: ease, useNativeDriver: true }),
+        Animated.timing(anim.opacity, { toValue: 1, delay, duration: 420, easing: ease, useNativeDriver: true }),
+        Animated.timing(anim.y, { toValue: 0, delay, duration: 420, easing: ease, useNativeDriver: true }),
       ]).start();
     });
-  }, [badgeOpacity, badgeY, cardAnims]);
+  }, [badgeOpacity, badgeY, cardAnims, reducedMotion]);
 
   useEffect(() => {
     const prevSelected = prevSelectedRef.current;
@@ -133,6 +146,12 @@ export default function DealBreakersScreen() {
       const wasSelected = prevSelected.has(item.id);
       const isSelected = selected.has(item.id);
       if (wasSelected === isSelected) return;
+
+      if (reducedMotion) {
+        anim.selectedScale.setValue(isSelected ? 1.05 : 1);
+        anim.flip.setValue(isSelected ? 180 : 0);
+        return;
+      }
 
       Animated.timing(anim.selectedScale, {
         toValue: isSelected ? 1.05 : 1,
@@ -148,7 +167,7 @@ export default function DealBreakersScreen() {
       }).start();
     });
     prevSelectedRef.current = new Set(selected);
-  }, [cardAnims, selected]);
+  }, [cardAnims, reducedMotion, selected]);
 
   const toggle = useCallback((id: DealbreakerId) => {
     setSelected((prev) => {
@@ -211,7 +230,7 @@ export default function DealBreakersScreen() {
         canContinue={canContinue}
         isLoading={isLoading}
       >
-        {!!error ? (
+        {error ? (
           <View style={styles.errorBanner}>
             <Text style={styles.errorText}>{error}</Text>
           </View>
@@ -222,7 +241,7 @@ export default function DealBreakersScreen() {
             <Text style={styles.counterText}>
               {selected.size} of {MAX} selected
             </Text>
-            {selected.size > 0 ? <Ionicons name="checkmark-circle" size={15} color="#7D9B76" /> : null}
+            {selected.size > 0 ? <Ionicons name="checkmark-circle" size={15} color={ONBOARDING_TOKENS.sage} /> : null}
           </View>
           <Text style={styles.counterHint}>{helperText}</Text>
         </Animated.View>
@@ -270,8 +289,8 @@ export default function DealBreakersScreen() {
                       <LinearGradient
                         colors={
                           isDisabled
-                            ? ['rgba(66,66,72,0.08)', 'rgba(66,66,72,0.04)']
-                            : ['rgba(125,155,118,0.14)', 'rgba(125,155,118,0.06)']
+                            ? ['rgba(45,45,45,0.05)', 'rgba(45,45,45,0.03)']
+                            : ['rgba(157,171,155,0.10)', 'rgba(157,171,155,0.05)']
                         }
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
@@ -281,7 +300,7 @@ export default function DealBreakersScreen() {
                           <Ionicons
                             name={DEALBREAKER_ICONS[item.id]}
                             size={24}
-                            color={isDisabled ? 'rgba(66,66,72,0.45)' : '#7D9B76'}
+                            color={isDisabled ? 'rgba(45,45,45,0.45)' : ONBOARDING_TOKENS.sage}
                           />
                         </View>
                         <Text style={styles.cardLabel}>{item.label}</Text>
@@ -300,16 +319,16 @@ export default function DealBreakersScreen() {
                       ]}
                     >
                       <LinearGradient
-                        colors={['#722F37', '#7A404A']}
+                        colors={ONBOARDING_GRADIENTS.cardPrimary}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={styles.cardFaceFill}
                       >
                         <View style={styles.selectedIconWrap}>
-                          <Ionicons name={DEALBREAKER_ICONS[item.id]} size={28} color="#FFFFFF" />
+                          <Ionicons name={DEALBREAKER_ICONS[item.id]} size={28} color={ONBOARDING_TOKENS.white} />
                         </View>
                         <View style={styles.selectedCheck}>
-                          <Ionicons name="checkmark-circle" size={15} color="#722F37" />
+                          <Ionicons name="checkmark-circle" size={15} color={ONBOARDING_TOKENS.coral} />
                         </View>
                       </LinearGradient>
                     </Animated.View>
@@ -323,11 +342,11 @@ export default function DealBreakersScreen() {
     </>
   );
 }
- 
+
 const styles = StyleSheet.create({
   errorBanner: {
-    backgroundColor: 'rgba(255, 247, 237, 0.95)',
-    borderColor: 'rgba(251, 146, 60, 0.35)',
+    backgroundColor: 'rgba(229,224,229,0.95)',
+    borderColor: 'rgba(114,47,55,0.35)',
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 12,
@@ -335,40 +354,52 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   errorText: {
-    color: '#C2410C',
+    color: ONBOARDING_TOKENS.coral,
     fontSize: 13,
     lineHeight: 18,
     textAlign: 'center',
     fontWeight: '600',
   },
 
-  counterWrap: { alignItems: 'center', marginBottom: 16 },
+  counterWrap: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   counterPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     borderWidth: 1,
-    borderColor: 'rgba(154,176,154,0.24)',
-    backgroundColor: 'rgba(154,176,154,0.10)',
+    borderColor: 'rgba(157,171,155,0.2)',
+    backgroundColor: 'rgba(157,171,155,0.10)',
     borderRadius: 999,
     paddingHorizontal: 15,
     paddingVertical: 8,
   },
   counterPillReady: {
-    borderColor: 'rgba(125,155,118,0.34)',
-    backgroundColor: 'rgba(157,171,155,0.16)',
+    borderColor: 'rgba(157,171,155,0.3)',
+    backgroundColor: 'rgba(157,171,155,0.14)',
   },
-  counterText: { color: '#7D9B76', fontSize: 14, fontWeight: '600' },
+  counterText: {
+    color: ONBOARDING_TOKENS.sage,
+    fontSize: 14,
+    fontWeight: '600',
+  },
   counterHint: {
     marginTop: 7,
     fontSize: 13,
     lineHeight: 18,
-    color: 'rgba(66,66,72,0.65)',
+    color: ONBOARDING_TOKENS.charcoal60,
     fontWeight: '600',
     textAlign: 'center',
   },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 12,
+  },
   card: {
     height: 164,
     borderRadius: 14,
@@ -385,7 +416,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backfaceVisibility: 'hidden',
     borderWidth: 2,
-    borderColor: 'rgba(154,176,154,0.32)',
+    borderColor: 'rgba(157,171,155,0.30)',
   },
   cardFaceFill: {
     flex: 1,
@@ -398,25 +429,29 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: 'rgba(125,155,118,0.16)',
+    backgroundColor: 'rgba(157,171,155,0.16)',
     borderWidth: 1,
-    borderColor: 'rgba(125,155,118,0.28)',
+    borderColor: 'rgba(157,171,155,0.28)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
   },
   cardIconWrapDisabled: {
-    backgroundColor: 'rgba(66,66,72,0.08)',
-    borderColor: 'rgba(66,66,72,0.16)',
+    backgroundColor: 'rgba(45,45,45,0.08)',
+    borderColor: 'rgba(45,45,45,0.16)',
   },
   cardFaceFillDisabled: {
-    borderColor: 'rgba(66,66,72,0.2)',
+    borderColor: 'rgba(45,45,45,0.2)',
   },
-  cardDisabled: { opacity: 0.42 },
-  cardPressed: { transform: [{ scale: 0.98 }] },
+  cardDisabled: {
+    opacity: 0.42,
+  },
+  cardPressed: {
+    transform: [{ scale: 0.98 }],
+  },
   cardLabel: {
     textAlign: 'center',
-    color: '#2D2D2D',
+    color: ONBOARDING_TOKENS.charcoal,
     fontSize: 16,
     lineHeight: 22,
     fontWeight: '700',
@@ -424,7 +459,7 @@ const styles = StyleSheet.create({
   },
   cardDescription: {
     textAlign: 'center',
-    color: 'rgba(66,66,72,0.66)',
+    color: ONBOARDING_TOKENS.charcoal60,
     fontSize: 13,
     lineHeight: 19,
     fontWeight: '600',
@@ -442,7 +477,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 999,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: ONBOARDING_TOKENS.white,
     alignItems: 'center',
     justifyContent: 'center',
   },

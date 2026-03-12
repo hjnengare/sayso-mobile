@@ -1,6 +1,7 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Text } from '../Typography';
-import { businessDetailColors, businessDetailSpacing } from './styles';
+import { businessDetailColors, businessDetailSpacing, CARD_GRADIENT, cardShadowStyle } from './styles';
 
 type Props = {
   description: string;
@@ -8,31 +9,28 @@ type Props = {
 
 export function BusinessDescriptionCard({ description }: Props) {
   return (
-    <View style={styles.card}>
+    <LinearGradient colors={CARD_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.card}>
       <Text style={styles.heading}>About</Text>
       <Text style={styles.body}>{description}</Text>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
     borderRadius: businessDetailSpacing.cardRadius,
-    borderWidth: 1,
-    borderColor: businessDetailColors.borderSoft,
-    backgroundColor: businessDetailColors.cardTint,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    padding: businessDetailSpacing.cardPadding,
     gap: 8,
-  },
+    ...cardShadowStyle,
+  } as object,
   heading: {
     color: businessDetailColors.charcoal,
-    fontSize: 19,
-    fontWeight: '700',
+    fontSize: businessDetailSpacing.headingFontSize,
+    fontWeight: businessDetailSpacing.headingFontWeight,
   },
   body: {
     color: businessDetailColors.textMuted,
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: businessDetailSpacing.bodyFontSize,
+    lineHeight: businessDetailSpacing.bodyLineHeight,
   },
 });

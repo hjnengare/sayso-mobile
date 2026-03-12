@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, Pressable, StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Dimensions, Easing, StyleSheet, View } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { OnboardingLayout } from '../../components/onboarding/OnboardingLayout';
+import { ONBOARDING_TOKENS } from '../../components/onboarding/onboardingTheme';
 import { Text } from '../../components/Typography';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { apiFetch } from '../../lib/api';
 import { routes } from '../../navigation/routes';
 
@@ -13,7 +14,6 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const PARTICLE_COUNT = 54;
 const FALL_DISTANCE = SCREEN_HEIGHT + 120;
 
-// Confetti particle — a single animated colored dot
 function Particle({ delay, x, color, size }: { delay: number; x: number; color: string; size: number }) {
   const y = useRef(new Animated.Value(-20)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -30,7 +30,7 @@ function Particle({ delay, x, color, size }: { delay: number; x: number; color: 
       Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
     ]);
     anim.start();
-  }, [delay, opacity, y, rotation]);
+  }, [delay, opacity, rotation, y]);
 
   const spin = rotation.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
@@ -52,15 +52,6 @@ function Particle({ delay, x, color, size }: { delay: number; x: number; color: 
   );
 }
 
-const CONFETTI_COLORS = ['#722F37', '#9DAB9B', '#E5E0E5', '#7D9B76', '#D4A5A5', '#B8C9B6'];
-const PARTICLES = Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
-  key: i,
-  delay: Math.random() * 1000,
-  x: Math.random() * (SCREEN_WIDTH + 40) - 20,
-  color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-  size: 5 + Math.random() * 9,
-}));
-
 type DealbreakerIconName = 'shield-checkmark-outline' | 'time-outline' | 'happy-outline' | 'pricetag-outline';
 
 const DEALBREAKER_ICONS: Record<string, DealbreakerIconName> = {
@@ -70,18 +61,38 @@ const DEALBREAKER_ICONS: Record<string, DealbreakerIconName> = {
   'value-for-money': 'pricetag-outline',
 };
 
+const CONFETTI_COLORS = [
+  ONBOARDING_TOKENS.coral,
+  ONBOARDING_TOKENS.sage,
+  ONBOARDING_TOKENS.offWhite,
+  'rgba(114,47,55,0.8)',
+  'rgba(157,171,155,0.9)',
+];
+
 export default function CompleteScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const reducedMotion = useReducedMotion();
   const [selectedDealbreakers, setSelectedDealbreakers] = useState<string[]>([]);
   const [isCompleting, setIsCompleting] = useState(false);
   const hasCompletedRef = useRef(false);
 
-  // Entrance animations
-  const textOpacity  = useRef(new Animated.Value(0)).current;
-  const textY        = useRef(new Animated.Value(20)).current;
-  const btnOpacity   = useRef(new Animated.Value(0)).current;
-  const btnY         = useRef(new Animated.Value(16)).current;
+  const contentOpacity = useRef(new Animated.Value(0)).current;
+  const contentY = useRef(new Animated.Value(16)).current;
+  const badgeOpacity = useRef(new Animated.Value(0)).current;
+  const badgeY = useRef(new Animated.Value(12)).current;
+  const iconFloat = useRef(Array.from({ length: 4 }, () => new Animated.Value(0))).current;
+
+  const particles = useMemo(
+    () =>
+      Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
+        key: i,
+        delay: Math.random() * 1000,
+        x: Math.random() * (SCREEN_WIDTH + 40) - 20,
+        color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+        size: 5 + Math.random() * 9,
+      })),
+    []
+  );
 
   const handleContinue = useCallback(async () => {
     if (hasCompletedRef.current) return;
@@ -119,93 +130,138 @@ export default function CompleteScreen() {
         // Ignore storage errors.
       });
 
-    // Staggered entrance
-    Animated.sequence([
-      Animated.parallel([
-        Animated.timing(textOpacity, { toValue: 1, delay: 80, duration: 360, useNativeDriver: true }),
-        Animated.timing(textY, { toValue: 0, delay: 80, duration: 360, useNativeDriver: true }),
-      ]),
-      Animated.parallel([
-        Animated.timing(btnOpacity, { toValue: 1, delay: 150, duration: 320, useNativeDriver: true }),
-        Animated.timing(btnY, { toValue: 0, delay: 150, duration: 320, useNativeDriver: true }),
-      ]),
-    ]).start();
+    if (reducedMotion) {
+      contentOpacity.setValue(1);
+      contentY.setValue(0);
+      badgeOpacity.setValue(1);
+      badgeY.setValue(0);
+    } else {
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(contentOpacity, { toValue: 1, delay: 90, duration: 360, useNativeDriver: true }),
+          Animated.timing(contentY, { toValue: 0, delay: 90, duration: 360, useNativeDriver: true }),
+        ]),
+        Animated.parallel([
+          Animated.timing(badgeOpacity, { toValue: 1, delay: 120, duration: 300, useNativeDriver: true }),
+          Animated.timing(badgeY, { toValue: 0, delay: 120, duration: 300, useNativeDriver: true }),
+        ]),
+      ]).start();
+    }
 
-    // Auto-redirect after 2s
     const timer = setTimeout(() => {
       void handleContinue();
     }, 2000);
+
     return () => clearTimeout(timer);
-  }, [btnOpacity, btnY, handleContinue, textOpacity, textY]);
+  }, [badgeOpacity, badgeY, contentOpacity, contentY, handleContinue, reducedMotion]);
+
+  useEffect(() => {
+    if (reducedMotion || selectedDealbreakers.length === 0) {
+      iconFloat.forEach((value) => value.setValue(0));
+      return;
+    }
+
+    const loops = iconFloat.map((value, index) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(value, {
+            toValue: 1,
+            duration: 1300 + index * 150,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(value, {
+            toValue: 0,
+            duration: 1300 + index * 150,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ])
+      )
+    );
+
+    loops.forEach((loop) => loop.start());
+
+    return () => {
+      loops.forEach((loop) => loop.stop());
+      iconFloat.forEach((value) => value.setValue(0));
+    };
+  }, [iconFloat, reducedMotion, selectedDealbreakers.length]);
 
   return (
-    <View style={[styles.root, { backgroundColor: '#E5E0E5' }]}>
-      {/* Confetti particles */}
-      <View style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]} pointerEvents="none">
-        {PARTICLES.map(p => (
-          <Particle key={p.key} delay={p.delay} x={p.x} color={p.color} size={p.size} />
-        ))}
-      </View>
-
-      <View style={[styles.content, { paddingTop: insets.top + 40, paddingBottom: 24 }]}>
-        {/* Text block */}
-        <Animated.View style={[styles.textBlock, { opacity: textOpacity, transform: [{ translateY: textY }] }]}>
-          <Text style={styles.heading}>You're all set!</Text>
-          <Text style={styles.subheading}>Time to discover what's out there.</Text>
-
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <OnboardingLayout
+        step={4}
+        totalSteps={4}
+        title="You're all set!"
+        subtitle="Time to discover what's out there."
+        onContinue={handleContinue}
+        continueLabel="Continue to Home"
+        loadingLabel="Going to Home..."
+        canContinue={!isCompleting}
+        isLoading={isCompleting}
+        overlay={
+          !reducedMotion ? (
+            <View style={[StyleSheet.absoluteFill, styles.confettiLayer]} pointerEvents="none">
+              {particles.map((particle) => (
+                <Particle
+                  key={particle.key}
+                  delay={particle.delay}
+                  x={particle.x}
+                  color={particle.color}
+                  size={particle.size}
+                />
+              ))}
+            </View>
+          ) : undefined
+        }
+      >
+        <Animated.View style={[styles.content, { opacity: contentOpacity, transform: [{ translateY: contentY }] }]}>
           {selectedDealbreakers.length > 0 ? (
             <View style={styles.iconRow}>
-              {selectedDealbreakers.map((id) => {
+              {selectedDealbreakers.map((id, index) => {
                 const icon = DEALBREAKER_ICONS[id];
                 if (!icon) return null;
+
+                const floatY = iconFloat[index % iconFloat.length].interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, -8],
+                });
+
                 return (
-                  <View key={id} style={styles.iconBubble}>
-                    <Ionicons name={icon} size={22} color="#7D9B76" />
-                  </View>
+                  <Animated.View key={id} style={{ transform: [{ translateY: floatY }] }}>
+                    <View style={styles.iconBubble}>
+                      <Ionicons name={icon} size={22} color={ONBOARDING_TOKENS.sage} />
+                    </View>
+                  </Animated.View>
                 );
               })}
             </View>
           ) : null}
+
+          <Animated.View style={{ opacity: badgeOpacity, transform: [{ translateY: badgeY }] }}>
+            <View style={styles.badge}>
+              <Ionicons name="checkmark-circle" size={14} color={ONBOARDING_TOKENS.sage} />
+              <Text style={styles.badgeText}>Setup Complete</Text>
+            </View>
+            <Text style={styles.autoRedirectHint}>Redirecting automatically...</Text>
+          </Animated.View>
         </Animated.View>
-
-        {/* CTA button */}
-        <Animated.View style={[styles.btnWrap, { opacity: btnOpacity, transform: [{ translateY: btnY }] }]}>
-          <Pressable
-            style={({ pressed }) => [styles.btn, isCompleting && styles.btnDisabled, pressed && !isCompleting && styles.btnPressed]}
-            onPress={() => void handleContinue()}
-            disabled={isCompleting}
-          >
-            <LinearGradient
-              colors={['#722F37', '#7A404A']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.btnGradient}
-            >
-              <Text style={styles.btnTxt}>{isCompleting ? 'Going to Home...' : 'Continue to Home'}</Text>
-              {!isCompleting ? <Ionicons name="arrow-forward" size={18} color="#FFFFFF" style={{ marginLeft: 8 }} /> : null}
-            </LinearGradient>
-          </Pressable>
-
-          <View style={styles.badge}>
-            <Ionicons name="checkmark-circle" size={14} color="#7D9B76" />
-            <Text style={styles.badgeText}>Setup Complete</Text>
-          </View>
-          <Text style={styles.autoRedirectHint}>Redirecting automatically…</Text>
-        </Animated.View>
-
-      </View>
-    </View>
+      </OnboardingLayout>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-
-  content: {
-    flex: 1, alignItems: 'center', justifyContent: 'center',
-    paddingHorizontal: 32, gap: 32,
+  confettiLayer: {
+    overflow: 'hidden',
   },
-  textBlock: { alignItems: 'center', gap: 12, width: '100%' },
+  content: {
+    alignItems: 'center',
+    gap: 18,
+    marginBottom: 8,
+  },
   iconRow: {
     marginTop: 6,
     flexDirection: 'row',
@@ -220,49 +276,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: 'rgba(125,155,118,0.32)',
-    backgroundColor: 'rgba(125,155,118,0.16)',
+    borderColor: 'rgba(157,171,155,0.32)',
+    backgroundColor: 'rgba(157,171,155,0.16)',
   },
-
   badge: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: 'rgba(125,155,118,0.15)',
-    borderRadius: 999, paddingHorizontal: 14, paddingVertical: 6,
-    borderWidth: 1, borderColor: 'rgba(125,155,118,0.35)',
-  },
-  badgeText: { fontSize: 12, fontWeight: '700', color: '#7D9B76' },
-
-  heading: {
-    fontSize: 34, fontWeight: '700', color: '#2D2D2D',
-    textAlign: 'center', letterSpacing: -0.5,
-  },
-  subheading: {
-    fontSize: 16, lineHeight: 24, fontWeight: '400',
-    color: 'rgba(45,45,45,0.65)', textAlign: 'center',
-  },
-
-  btnWrap: { alignItems: 'center', gap: 12 },
-
-  btn: {
-    borderRadius: 999,
-    overflow: 'hidden',
-    shadowColor: '#722F37',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.24,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  btnGradient: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingVertical: 16, paddingHorizontal: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(157,171,155,0.15)',
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(157,171,155,0.35)',
   },
-  btnPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
-  btnDisabled: { opacity: 0.64, shadowOpacity: 0 },
-  btnTxt: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
-
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: ONBOARDING_TOKENS.sage,
+  },
   autoRedirectHint: {
-    fontSize: 12, fontWeight: '400',
-    color: 'rgba(45,45,45,0.45)', textAlign: 'center',
+    marginTop: 10,
+    fontSize: 12,
+    fontWeight: '400',
+    color: 'rgba(45,45,45,0.60)',
+    textAlign: 'center',
   },
 });

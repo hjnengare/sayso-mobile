@@ -49,8 +49,8 @@ const styles = StyleSheet.create({
   title: {
     color: businessDetailColors.charcoal,
     fontSize: 29,
-    lineHeight: 34,
-    fontWeight: '800',
+    lineHeight: 36,
+    fontWeight: '700',
   },
   metaRow: {
     flexDirection: 'row',
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     gap: 5,
     borderRadius: 999,
     backgroundColor: 'rgba(229,224,229,0.95)',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
   },
   metaText: {
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   categoryPill: {
     borderRadius: 999,
     backgroundColor: 'rgba(229,224,229,0.78)',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
   },
   categoryText: {
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     gap: 4,
     borderRadius: 999,
     backgroundColor: 'rgba(229,224,229,0.78)',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
   },
   locationText: {

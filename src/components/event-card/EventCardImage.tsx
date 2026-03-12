@@ -21,17 +21,17 @@ function EventCardImageComponent({ imageUri, isFallbackArtwork }: Props) {
       {shouldShowImage ? (
         <Image
           source={{ uri: imageUri ?? undefined }}
-          style={styles.image}
+          style={isFallbackArtwork ? styles.fallbackArtworkImage : styles.image}
           contentFit={isFallbackArtwork ? 'contain' : 'cover'}
           contentPosition="center"
           cachePolicy="memory-disk"
           recyclingKey={imageUri ?? 'event-fallback'}
-          transition={150}
+          transition={180}
           onError={() => setFailed(true)}
         />
       ) : (
         <View style={styles.fallbackState}>
-          <Ionicons name="calendar" size={36} color="rgba(45, 55, 72, 0.45)" />
+          <Ionicons name="calendar-outline" size={42} color="rgba(45,45,45,0.2)" />
         </View>
       )}
     </View>
@@ -47,20 +47,25 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#F7FAFC',
+    backgroundColor: '#E5E0E5',
     alignItems: 'center',
     justifyContent: 'center',
   },
   image: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#F7FAFC',
+    backgroundColor: '#E5E0E5',
+  },
+  fallbackArtworkImage: {
+    width: '56%',
+    height: '56%',
+    backgroundColor: 'transparent',
   },
   fallbackState: {
     width: '100%',
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F7FAFC',
+    backgroundColor: '#E5E0E5',
   },
 });

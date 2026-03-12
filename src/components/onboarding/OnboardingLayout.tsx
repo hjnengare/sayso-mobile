@@ -7,27 +7,25 @@ import {
   Pressable,
   StyleSheet,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { Text } from '../Typography';
-
-const C = {
-  page: '#E5E0E5',
-  wine: '#722F37',
-  sage: '#7D9B76',
-  white: '#FFFFFF',
-};
+import { ONBOARDING_GRADIENTS, ONBOARDING_TOKENS } from './onboardingTheme';
 
 type Props = {
   step: number;
   totalSteps: number;
   title: string;
   subtitle: string;
+  overlay?: ReactNode;
   onBack?: () => void;
   onContinue: () => void;
   continueLabel?: string;
+  loadingLabel?: string;
   continueVariant?: 'continue' | 'complete';
   canContinue: boolean;
   isLoading?: boolean;
@@ -42,9 +40,11 @@ export function OnboardingLayout({
   totalSteps,
   title,
   subtitle,
+  overlay,
   onBack,
   onContinue,
   continueLabel = 'Continue',
+  loadingLabel = 'Saving...',
   continueVariant = 'continue',
   canContinue,
   isLoading = false,
@@ -54,32 +54,34 @@ export function OnboardingLayout({
   children,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const reducedMotion = useReducedMotion();
+  const { width } = useWindowDimensions();
+
   const progressPercentage = Math.max(0, Math.min(100, (step / totalSteps) * 100));
   const isCompleteVariant = continueVariant === 'complete';
   const hasBack = Boolean(onBack);
   const progressEase = useRef(Easing.bezier(0.4, 0, 0.2, 1)).current;
 
-  // Title: slide-up + fade
   const titleOpacity = useRef(new Animated.Value(0)).current;
-  const titleY       = useRef(new Animated.Value(10)).current;
-
-  // Subtitle: slide-up + fade
+  const titleY = useRef(new Animated.Value(10)).current;
   const subtitleOpacity = useRef(new Animated.Value(0)).current;
-  const subtitleY       = useRef(new Animated.Value(10)).current;
-
-  // Action area: fade-up
+  const subtitleY = useRef(new Animated.Value(10)).current;
   const actionOpacity = useRef(new Animated.Value(0)).current;
-  const actionY       = useRef(new Animated.Value(16)).current;
+  const actionY = useRef(new Animated.Value(16)).current;
 
-  // Web-parity progress/back animations
   const progressScaleX = useRef(new Animated.Value(0)).current;
   const activeDotScale = useRef(new Animated.Value(1)).current;
   const backOpacity = useRef(new Animated.Value(0)).current;
   const backY = useRef(new Animated.Value(30)).current;
   const [displayTitle, setDisplayTitle] = useState(titleTyping ? '' : title);
 
+  const titleFontSize = width >= 1024 ? 36 : width >= 768 ? 30 : 24;
+  const titleLineHeight = width >= 1024 ? 44 : width >= 768 ? 38 : 32;
+  const subtitleFontSize = width >= 768 ? 16 : 14;
+  const subtitleLineHeight = width >= 768 ? 24 : 21;
+
   useEffect(() => {
-    if (!titleTyping) {
+    if (!titleTyping || reducedMotion) {
       setDisplayTitle(title);
       return;
     }
@@ -101,28 +103,43 @@ export function OnboardingLayout({
       clearTimeout(startTimeout);
       if (intervalId) clearInterval(intervalId);
     };
-  }, [title, titleTyping, titleTypingDelayMs, titleTypingSpeedMs]);
+  }, [reducedMotion, title, titleTyping, titleTypingDelayMs, titleTypingSpeedMs]);
 
   useEffect(() => {
+    if (reducedMotion) {
+      titleOpacity.setValue(1);
+      titleY.setValue(0);
+      subtitleOpacity.setValue(1);
+      subtitleY.setValue(0);
+      actionOpacity.setValue(1);
+      actionY.setValue(0);
+      return;
+    }
+
     const ease = Easing.out(Easing.cubic);
 
     Animated.parallel([
       Animated.timing(titleOpacity, { toValue: 1, delay: 50, duration: 400, useNativeDriver: true }),
-      Animated.timing(titleY,       { toValue: 0, delay: 50, duration: 400, easing: ease, useNativeDriver: true }),
+      Animated.timing(titleY, { toValue: 0, delay: 50, duration: 400, easing: ease, useNativeDriver: true }),
     ]).start();
 
     Animated.parallel([
       Animated.timing(subtitleOpacity, { toValue: 1, delay: 110, duration: 400, useNativeDriver: true }),
-      Animated.timing(subtitleY,       { toValue: 0, delay: 110, duration: 400, easing: ease, useNativeDriver: true }),
+      Animated.timing(subtitleY, { toValue: 0, delay: 110, duration: 400, easing: ease, useNativeDriver: true }),
     ]).start();
 
     Animated.parallel([
       Animated.timing(actionOpacity, { toValue: 1, delay: 180, duration: 320, useNativeDriver: true }),
-      Animated.timing(actionY,       { toValue: 0, delay: 180, duration: 320, easing: ease, useNativeDriver: true }),
+      Animated.timing(actionY, { toValue: 0, delay: 180, duration: 320, easing: ease, useNativeDriver: true }),
     ]).start();
-  }, [actionOpacity, actionY, subtitleOpacity, subtitleY, titleOpacity, titleY]);
+  }, [actionOpacity, actionY, reducedMotion, subtitleOpacity, subtitleY, titleOpacity, titleY]);
 
   useEffect(() => {
+    if (reducedMotion) {
+      progressScaleX.setValue(1);
+      return;
+    }
+
     progressScaleX.setValue(0);
     Animated.timing(progressScaleX, {
       toValue: 1,
@@ -130,9 +147,14 @@ export function OnboardingLayout({
       easing: progressEase,
       useNativeDriver: true,
     }).start();
-  }, [progressScaleX, step]);
+  }, [progressEase, progressScaleX, reducedMotion, step]);
 
   useEffect(() => {
+    if (reducedMotion) {
+      activeDotScale.setValue(1);
+      return;
+    }
+
     const pulseLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(activeDotScale, {
@@ -150,14 +172,22 @@ export function OnboardingLayout({
       ])
     );
     pulseLoop.start();
+
     return () => {
       pulseLoop.stop();
       activeDotScale.setValue(1);
     };
-  }, [activeDotScale]);
+  }, [activeDotScale, reducedMotion]);
 
   useEffect(() => {
     if (!hasBack) return;
+
+    if (reducedMotion) {
+      backOpacity.setValue(1);
+      backY.setValue(0);
+      return;
+    }
+
     backOpacity.setValue(0);
     backY.setValue(30);
     Animated.parallel([
@@ -176,10 +206,19 @@ export function OnboardingLayout({
         useNativeDriver: true,
       }),
     ]).start();
-  }, [backOpacity, backY, hasBack]);
+  }, [backOpacity, backY, hasBack, reducedMotion]);
 
   return (
-    <View style={[styles.root, { backgroundColor: C.page }]}>
+    <View style={styles.root}>
+      <LinearGradient
+        colors={ONBOARDING_GRADIENTS.page}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      {overlay}
+
       <View style={styles.topProgressTrack}>
         <Animated.View
           style={[
@@ -201,7 +240,7 @@ export function OnboardingLayout({
           ]}
         >
           <Pressable style={styles.backBtn} onPress={onBack} hitSlop={12}>
-            <Ionicons name="arrow-back" size={22} color={C.white} />
+            <Ionicons name="arrow-back" size={22} color={ONBOARDING_TOKENS.white} />
           </Pressable>
         </Animated.View>
       ) : null}
@@ -219,55 +258,56 @@ export function OnboardingLayout({
         keyboardShouldPersistTaps="handled"
         decelerationRate="normal"
       >
-        <Animated.View style={styles.header}>
-          <Animated.View style={{ opacity: titleOpacity, transform: [{ translateY: titleY }] }}>
-            <Text style={styles.title}>{displayTitle}</Text>
+        <View style={styles.mainContent}>
+          <Animated.View style={styles.header}>
+            <Animated.View style={{ opacity: titleOpacity, transform: [{ translateY: titleY }] }}>
+              <Text style={[styles.title, { fontSize: titleFontSize, lineHeight: titleLineHeight }]}>{displayTitle}</Text>
+            </Animated.View>
+            <Animated.View style={{ opacity: subtitleOpacity, transform: [{ translateY: subtitleY }] }}>
+              <Text style={[styles.subtitle, { fontSize: subtitleFontSize, lineHeight: subtitleLineHeight }]}>{subtitle}</Text>
+            </Animated.View>
           </Animated.View>
-          <Animated.View style={{ opacity: subtitleOpacity, transform: [{ translateY: subtitleY }] }}>
-            <Text style={styles.subtitle}>{subtitle}</Text>
-          </Animated.View>
-        </Animated.View>
 
-        {children}
+          {children}
 
-        <Animated.View
-          style={[styles.actionWrap, { opacity: actionOpacity, transform: [{ translateY: actionY }] }]}
-        >
-          <Pressable
-            style={({ pressed }) => [
-              styles.continueBtn,
-              !canContinue && styles.continueBtnDisabled,
-              pressed && canContinue && styles.continueBtnPressed,
-            ]}
-            onPress={onContinue}
-            disabled={!canContinue || isLoading}
+          <Animated.View
+            style={[styles.actionWrap, { opacity: actionOpacity, transform: [{ translateY: actionY }] }]}
           >
-            <LinearGradient
-              colors={isCompleteVariant ? [C.sage, '#6B8A64'] : [C.wine, '#7A404A']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.continueBtnGradient}
+            <Pressable
+              style={({ pressed }) => [
+                styles.continueBtn,
+                !canContinue && styles.continueBtnDisabled,
+                pressed && canContinue && styles.continueBtnPressed,
+              ]}
+              onPress={onContinue}
+              disabled={!canContinue || isLoading}
             >
-              {isLoading ? (
-                <>
-                  <ActivityIndicator size="small" color={C.white} style={styles.loadingSpinner} />
-                  <Text style={styles.continueTxt}>Saving…</Text>
-                </>
-              ) : (
-                <>
-                  <Text style={styles.continueTxt}>{continueLabel}</Text>
-                  <Ionicons name="arrow-forward" size={17} color={C.white} style={{ marginLeft: 8 }} />
-                </>
-              )}
-            </LinearGradient>
-          </Pressable>
+              <LinearGradient
+                colors={isCompleteVariant ? ONBOARDING_GRADIENTS.actionSecondary : ONBOARDING_GRADIENTS.actionPrimary}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.continueBtnGradient}
+              >
+                {isLoading ? (
+                  <>
+                    <ActivityIndicator size="small" color={ONBOARDING_TOKENS.white} style={styles.loadingSpinner} />
+                    <Text style={styles.continueTxt}>{loadingLabel}</Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.continueTxt}>{continueLabel}</Text>
+                    <Ionicons name="arrow-forward" size={17} color={ONBOARDING_TOKENS.white} style={{ marginLeft: 8 }} />
+                  </>
+                )}
+              </LinearGradient>
+            </Pressable>
 
-          <View style={styles.progressDots}>
-            {Array.from({ length: totalSteps }).map((_, index) => {
-              const dot = index + 1;
-              const isActive = dot === step;
-              const isCompleted = dot < step;
-              return (
+            <View style={styles.progressDots}>
+              {Array.from({ length: totalSteps }).map((_, index) => {
+                const dot = index + 1;
+                const isActive = dot === step;
+                const isCompleted = dot < step;
+                return (
                   <Animated.View
                     key={dot}
                     style={isActive ? { transform: [{ scale: activeDotScale }] } : undefined}
@@ -282,16 +322,20 @@ export function OnboardingLayout({
                   </Animated.View>
                 );
               })}
-          </View>
-          <Text style={styles.progressLabel}>Step {step} of {totalSteps}</Text>
-        </Animated.View>
+            </View>
+            <Text style={styles.progressLabel}>Step {step} of {totalSteps}</Text>
+          </Animated.View>
+        </View>
       </Animated.ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
+  root: {
+    flex: 1,
+    backgroundColor: ONBOARDING_TOKENS.offWhite,
+  },
   flex: { flex: 1 },
 
   topProgressTrack: {
@@ -300,53 +344,71 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     height: 4,
-    backgroundColor: 'rgba(45,45,45,0.12)',
+    backgroundColor: 'rgba(45,45,45,0.10)',
     zIndex: 20,
   },
   topProgressFill: {
     height: '100%',
-    backgroundColor: '#9DAB9B',
+    backgroundColor: ONBOARDING_TOKENS.cardBg,
     transformOrigin: 'left center',
   },
 
-  backWrap: { position: 'absolute', left: 20, zIndex: 10 },
+  backWrap: {
+    position: 'absolute',
+    left: 20,
+    zIndex: 10,
+  },
   backBtn: {
     width: 44,
     height: 44,
     borderRadius: 999,
-    backgroundColor: '#722F37',
+    backgroundColor: 'rgba(114,47,55,0.9)',
     borderWidth: 1,
     borderColor: 'rgba(114,47,55,0.6)',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  scroll: { paddingHorizontal: 18 },
-  header: { marginBottom: 16, alignItems: 'center' },
-  title: {
-    fontSize: 34,
-    fontWeight: '700',
-    color: '#2D2D2D',
-    letterSpacing: -0.4,
-    lineHeight: 40,
-    marginBottom: 8,
-    textAlign: 'center',
+  scroll: {
+    paddingHorizontal: 16,
+    flexGrow: 1,
   },
-  subtitle: {
-    fontSize: 15,
-    lineHeight: 23,
-    fontWeight: '400',
-    color: 'rgba(45,45,45,0.70)',
+  mainContent: {
+    flexGrow: 1,
+  },
+  header: {
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  title: {
+    fontWeight: '700',
+    color: ONBOARDING_TOKENS.charcoal,
+    letterSpacing: -0.3,
+    marginBottom: 8,
     textAlign: 'center',
     paddingHorizontal: 8,
   },
+  subtitle: {
+    fontWeight: '400',
+    color: ONBOARDING_TOKENS.charcoal70,
+    textAlign: 'center',
+    paddingHorizontal: 8,
+    maxWidth: 520,
+  },
 
-  actionWrap: { marginTop: 24, paddingBottom: 2, alignItems: 'center' },
+  actionWrap: {
+    marginTop: 'auto',
+    paddingTop: 24,
+    paddingBottom: 2,
+    alignItems: 'center',
+  },
   continueBtn: {
     width: '100%',
     maxWidth: 460,
     borderRadius: 999,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   continueBtnGradient: {
     paddingVertical: 15,
@@ -354,14 +416,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  continueBtnDisabled: { opacity: 0.42 },
-  continueBtnPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
-  continueTxt: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+  continueBtnDisabled: {
+    opacity: 0.42,
+  },
+  continueBtnPressed: {
+    opacity: 0.92,
+    transform: [{ scale: 0.98 }],
+  },
+  continueTxt: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: ONBOARDING_TOKENS.white,
+  },
   loadingSpinner: { marginRight: 8 },
 
-  progressDots: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 18 },
-  progressDot: { width: 12, height: 12, borderRadius: 999, backgroundColor: 'rgba(66,66,72,0.18)' },
-  progressDotActive: { backgroundColor: '#9AB09A' },
-  progressDotComplete: { backgroundColor: 'rgba(154,176,154,0.58)' },
-  progressLabel: { marginTop: 6, fontSize: 14, color: 'rgba(45,45,45,0.7)', fontWeight: '600' },
+  progressDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 18,
+  },
+  progressDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 999,
+    backgroundColor: ONBOARDING_TOKENS.charcoal20,
+  },
+  progressDotActive: {
+    backgroundColor: ONBOARDING_TOKENS.cardBg,
+  },
+  progressDotComplete: {
+    backgroundColor: 'rgba(157,171,155,0.6)',
+  },
+  progressLabel: {
+    marginTop: 6,
+    fontSize: 14,
+    color: ONBOARDING_TOKENS.charcoal70,
+    fontWeight: '600',
+  },
 });

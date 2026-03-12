@@ -764,6 +764,7 @@ export default function ProfileScreen() {
                           rating={review.rating}
                           reviewText={review.body || review.content || null}
                           reviewTitle={review.title || null}
+                          tags={review.tags || null}
                           createdAt={review.created_at}
                           onViewClick={() => {
                             if (!businessSlugOrId) return;

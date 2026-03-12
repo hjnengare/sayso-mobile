@@ -24,8 +24,9 @@ function getBadgeStyle(rank: number): { colors: readonly [string, string]; textC
 
 function Avatar({ src }: { src?: string }) {
   const [err, setErr] = useState(false);
+  const isValidUrl = Boolean(src && (src.startsWith('http://') || src.startsWith('https://')));
 
-  if (src && !err) {
+  if (isValidUrl && !err) {
     return (
       <Image
         source={{ uri: src }}

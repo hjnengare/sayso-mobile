@@ -5,7 +5,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { OnboardingLayout } from '../../components/onboarding/OnboardingLayout';
+import { ONBOARDING_GRADIENTS, ONBOARDING_TOKENS } from '../../components/onboarding/onboardingTheme';
 import { Text } from '../../components/Typography';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { apiFetch } from '../../lib/api';
 import { routes } from '../../navigation/routes';
 
@@ -126,8 +128,11 @@ type PillAnim = {
   checkScale: Animated.Value;
 };
 
+const AnimatedText = Animated.createAnimatedComponent(Text);
+
 export default function SubcategoriesScreen() {
   const router = useRouter();
+  const reducedMotion = useReducedMotion();
   const [interestIds, setInterestIds] = useState<string[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
@@ -213,13 +218,19 @@ export default function SubcategoriesScreen() {
   }, []);
 
   useEffect(() => {
+    if (reducedMotion) {
+      counterOpacity.setValue(1);
+      counterY.setValue(0);
+      return;
+    }
+
     const ease = Easing.bezier(0.25, 0.8, 0.25, 1);
 
     Animated.parallel([
       Animated.timing(counterOpacity, { toValue: 1, delay: 130, duration: 320, useNativeDriver: true }),
       Animated.timing(counterY, { toValue: 0, delay: 130, duration: 320, easing: ease, useNativeDriver: true }),
     ]).start();
-  }, [counterOpacity, counterY]);
+  }, [counterOpacity, counterY, reducedMotion]);
 
   const visibleGroups = useMemo(
     () =>
@@ -230,6 +241,17 @@ export default function SubcategoriesScreen() {
   );
 
   useEffect(() => {
+    if (reducedMotion) {
+      visibleGroups.forEach((_, groupIndex) => {
+        const anim = groupAnims[groupIndex];
+        if (!anim) return;
+        anim.opacity.setValue(1);
+        anim.y.setValue(0);
+        anim.titleX.setValue(0);
+      });
+      return;
+    }
+
     const ease = Easing.bezier(0.25, 0.8, 0.25, 1);
     visibleGroups.forEach((_, groupIndex) => {
       const anim = groupAnims[groupIndex];
@@ -261,13 +283,20 @@ export default function SubcategoriesScreen() {
         }),
       ]).start();
     });
-  }, [groupAnims, visibleGroups]);
+  }, [groupAnims, reducedMotion, visibleGroups]);
 
   useEffect(() => {
-    const ease = Easing.bezier(0.25, 0.8, 0.25, 1);
     visibleGroups.forEach((group, groupIndex) => {
       group.items.forEach((item, itemIndex) => {
         const anim = getPillAnim(item.id);
+
+        if (reducedMotion) {
+          anim.opacity.setValue(1);
+          anim.entryScale.setValue(1);
+          return;
+        }
+
+        const ease = Easing.bezier(0.25, 0.8, 0.25, 1);
         anim.opacity.setValue(0);
         anim.entryScale.setValue(0.8);
         Animated.parallel([
@@ -288,7 +317,7 @@ export default function SubcategoriesScreen() {
         ]).start();
       });
     });
-  }, [getPillAnim, visibleGroups]);
+  }, [getPillAnim, reducedMotion, visibleGroups]);
 
   useEffect(() => {
     const prevSelected = prevSelectedRef.current;
@@ -298,6 +327,12 @@ export default function SubcategoriesScreen() {
       const wasSelected = prevSelected.has(id);
       const isSelected = selected.has(id);
       if (wasSelected === isSelected) return;
+
+      if (reducedMotion) {
+        anim.selectedScale.setValue(isSelected ? 1.05 : 1);
+        anim.checkScale.setValue(isSelected ? 1 : 0);
+        return;
+      }
 
       Animated.spring(anim.selectedScale, {
         toValue: isSelected ? 1.05 : 1,
@@ -325,9 +360,11 @@ export default function SubcategoriesScreen() {
       }
     });
     prevSelectedRef.current = new Set(selected);
-  }, [getPillAnim, selected, visibleGroups]);
+  }, [getPillAnim, reducedMotion, selected, visibleGroups]);
 
   const triggerShake = useCallback((id: string) => {
+    if (reducedMotion) return;
+
     const anim = getPillAnim(id);
     anim.x.setValue(0);
     Animated.sequence([
@@ -337,9 +374,11 @@ export default function SubcategoriesScreen() {
       Animated.timing(anim.x, { toValue: 2, duration: 70, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
       Animated.timing(anim.x, { toValue: 0, duration: 70, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
     ]).start();
-  }, [getPillAnim]);
+  }, [getPillAnim, reducedMotion]);
 
   const triggerExcite = useCallback((id: string) => {
+    if (reducedMotion) return;
+
     const anim = getPillAnim(id);
     anim.tapScale.setValue(1);
     anim.y.setValue(0);
@@ -374,7 +413,7 @@ export default function SubcategoriesScreen() {
         }),
       ]).start();
     });
-  }, [getPillAnim]);
+  }, [getPillAnim, reducedMotion]);
 
   const toggle = useCallback((id: string) => {
     triggerExcite(id);
@@ -438,7 +477,7 @@ export default function SubcategoriesScreen() {
         canContinue={canContinue}
         isLoading={isLoading}
       >
-        {!!error ? (
+        {error ? (
           <View style={styles.errorBanner}>
             <Text style={styles.errorText}>{error}</Text>
           </View>
@@ -447,7 +486,7 @@ export default function SubcategoriesScreen() {
         <Animated.View style={[styles.counterWrap, { opacity: counterOpacity, transform: [{ translateY: counterY }] }]}>
           <View style={[styles.counterPill, selected.size > 0 && styles.counterPillReady]}>
             <Text style={styles.counterText}>{selected.size} of {MAX} selected</Text>
-            {selected.size > 0 ? <Ionicons name="checkmark-circle" size={15} color="#7D9B76" /> : null}
+            {selected.size > 0 ? <Ionicons name="checkmark-circle" size={15} color={ONBOARDING_TOKENS.sage} /> : null}
           </View>
           <Text style={styles.counterHint}>{helperText}</Text>
         </Animated.View>
@@ -464,9 +503,9 @@ export default function SubcategoriesScreen() {
                 key={group.interestId}
                 style={[styles.group, { opacity: anim.opacity, transform: [{ translateY: anim.y }] }]}
               >
-                <Animated.Text style={[styles.groupLabel, { transform: [{ translateX: anim.titleX }] }]}>
+                <AnimatedText style={[styles.groupLabel, { transform: [{ translateX: anim.titleX }] }]}>
                   {group.groupLabel}
-                </Animated.Text>
+                </AnimatedText>
                 <View style={styles.pillsRow}>
                   {group.items.map((item) => {
                     const isSelected = selected.has(item.id);
@@ -496,7 +535,11 @@ export default function SubcategoriesScreen() {
                           disabled={isDisabled}
                         >
                           <LinearGradient
-                            colors={isSelected ? ['#722F37', '#7A404A'] : ['rgba(125,155,118,0.14)', 'rgba(125,155,118,0.06)']}
+                            colors={
+                              isSelected
+                                ? ONBOARDING_GRADIENTS.cardPrimary
+                                : ['rgba(157,171,155,0.10)', 'rgba(157,171,155,0.05)']
+                            }
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={[styles.pillFill, isSelected && styles.pillSelected]}
@@ -506,7 +549,7 @@ export default function SubcategoriesScreen() {
                               <Animated.View
                                 style={{ transform: [{ scale: pillAnim.checkScale }], opacity: pillAnim.checkScale }}
                               >
-                                <Ionicons name="checkmark-circle" size={14} color="#FFFFFF" />
+                                <Ionicons name="checkmark-circle" size={14} color={ONBOARDING_TOKENS.white} />
                               </Animated.View>
                             ) : null}
                           </LinearGradient>
@@ -526,8 +569,8 @@ export default function SubcategoriesScreen() {
 
 const styles = StyleSheet.create({
   errorBanner: {
-    backgroundColor: 'rgba(255, 247, 237, 0.95)',
-    borderColor: 'rgba(251, 146, 60, 0.35)',
+    backgroundColor: 'rgba(229,224,229,0.95)',
+    borderColor: 'rgba(114,47,55,0.35)',
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 12,
@@ -535,53 +578,67 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   errorText: {
-    color: '#C2410C',
+    color: ONBOARDING_TOKENS.coral,
     fontSize: 13,
     lineHeight: 18,
     textAlign: 'center',
     fontWeight: '600',
   },
 
-  counterWrap: { alignItems: 'center', marginBottom: 16 },
+  counterWrap: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   counterPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     borderWidth: 1,
-    borderColor: 'rgba(154,176,154,0.24)',
-    backgroundColor: 'rgba(154,176,154,0.10)',
+    borderColor: 'rgba(157,171,155,0.2)',
+    backgroundColor: 'rgba(157,171,155,0.10)',
     borderRadius: 999,
     paddingHorizontal: 15,
     paddingVertical: 8,
   },
   counterPillReady: {
-    borderColor: 'rgba(125,155,118,0.34)',
-    backgroundColor: 'rgba(157,171,155,0.16)',
+    borderColor: 'rgba(157,171,155,0.3)',
+    backgroundColor: 'rgba(157,171,155,0.14)',
   },
-  counterText: { color: '#7D9B76', fontSize: 14, fontWeight: '600' },
+  counterText: {
+    color: ONBOARDING_TOKENS.sage,
+    fontSize: 14,
+    fontWeight: '600',
+  },
   counterHint: {
     marginTop: 7,
     fontSize: 13,
     lineHeight: 18,
-    color: 'rgba(66,66,72,0.65)',
+    color: ONBOARDING_TOKENS.charcoal60,
     fontWeight: '600',
     textAlign: 'center',
   },
 
-  group: { marginBottom: 20 },
+  group: {
+    marginBottom: 20,
+  },
   groupLabel: {
     fontSize: 17,
     lineHeight: 22,
-    color: '#2D2D2D',
+    color: ONBOARDING_TOKENS.charcoal,
     textAlign: 'center',
     fontWeight: '700',
     marginBottom: 12,
   },
-  pillsRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
+  pillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+  },
   pill: {
     borderRadius: 999,
     borderWidth: 2,
-    borderColor: 'rgba(125,155,118,0.30)',
+    borderColor: 'rgba(157,171,155,0.3)',
     overflow: 'hidden',
   },
   pillFill: {
@@ -592,24 +649,32 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   pillSelected: {
-    borderColor: '#722F37',
+    borderColor: ONBOARDING_TOKENS.coral,
   },
-  pillDisabled: { opacity: 0.42 },
-  pillPressed: { transform: [{ scale: 0.97 }] },
+  pillDisabled: {
+    opacity: 0.42,
+  },
+  pillPressed: {
+    transform: [{ scale: 0.97 }],
+  },
   pillText: {
-    color: '#7D9B76',
+    color: ONBOARDING_TOKENS.sage,
     fontSize: 14,
     lineHeight: 18,
     fontWeight: '600',
     textAlign: 'center',
   },
-  pillTextSelected: { color: '#FFFFFF' },
+  pillTextSelected: {
+    color: ONBOARDING_TOKENS.white,
+  },
 
-  emptyState: { paddingVertical: 18 },
+  emptyState: {
+    paddingVertical: 18,
+  },
   emptyStateText: {
     textAlign: 'center',
-    color: 'rgba(66,66,72,0.6)',
+    color: ONBOARDING_TOKENS.charcoal60,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
   },
 });

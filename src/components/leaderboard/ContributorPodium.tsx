@@ -32,8 +32,9 @@ const PILLAR_H: Record<1 | 2 | 3, number> = { 1: 72, 2: 48, 3: 36 };
 
 function Avatar({ src, size }: { src?: string; size: number }) {
   const [err, setErr] = useState(false);
+  const isValidUrl = Boolean(src && (src.startsWith('http://') || src.startsWith('https://')));
 
-  if (src && !err) {
+  if (isValidUrl && !err) {
     return (
       <Image
         source={{ uri: src }}

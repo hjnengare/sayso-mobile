@@ -37,7 +37,7 @@ export function BusinessCardBadges({
       <View style={[styles.badge, getOverlayShadowStyle(999), styles.rightBadge]}>
         {hasRating && rating != null ? (
           <>
-            <Ionicons name="star" size={13} color={getStarColor(rating)} />
+            <Ionicons name="star" size={14} color={getStarColor(rating)} />
             <Text style={styles.badgeText}>{rating.toFixed(1)}</Text>
           </>
         ) : (
@@ -69,30 +69,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     borderRadius: 999,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.94)',
+    backgroundColor: 'rgba(229, 224, 229, 0.95)',
   },
   leftBadge: {
-    top: 12,
-    left: 12,
+    top: 14,
+    left: 14,
   },
   rightBadge: {
-    top: 12,
-    right: 12,
+    top: 14,
+    right: 14,
   },
   bottomLeftBadge: {
     bottom: 12,
     left: 12,
+    backgroundColor: 'rgba(229, 224, 229, 0.9)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   badgeText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: '#2D2D2D',
   },
   distanceText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: 'rgba(45,45,45,0.8)',
+    fontWeight: '500',
+    color: '#2D2D2D',
   },
 });

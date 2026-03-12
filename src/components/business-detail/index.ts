@@ -13,7 +13,6 @@ export { BusinessPhotoGrid } from './BusinessPhotoGrid';
 export { BusinessPerformanceInsightsCard } from './BusinessPerformanceInsightsCard';
 export { BusinessReviewsSection } from './BusinessReviewsSection';
 export { BusinessScreenSkeleton } from './BusinessScreenSkeleton';
-export { ContactBusinessModal } from './ContactBusinessModal';
 export { PercentileChipsSection } from './PercentileChipsSection';
 export { PersonalizationInsightsCard } from './PersonalizationInsightsCard';
 export { SimilarBusinessesSection } from './SimilarBusinessesSection';

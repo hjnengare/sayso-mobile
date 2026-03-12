@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View, ScrollView } from 'react-native';
+import { Animated, Easing, StyleSheet, View, ScrollView, useWindowDimensions } from 'react-native';
 import type { BusinessListItemDto, FeaturedBusinessDto } from '@sayso/contracts';
 import { BusinessCard } from '../../../components/BusinessCard';
 import { Text } from '../../../components/Typography';
@@ -10,9 +10,10 @@ import { CARD_RADIUS } from '../../../styles/radii';
 type AnimatedCardProps = {
   index: number;
   business: BusinessListItemDto | FeaturedBusinessDto;
+  cardWidth: number;
 };
 
-const AnimatedBusinessCard = memo(function AnimatedBusinessCard({ index, business }: AnimatedCardProps) {
+const AnimatedBusinessCard = memo(function AnimatedBusinessCard({ index, business, cardWidth }: AnimatedCardProps) {
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -37,7 +38,7 @@ const AnimatedBusinessCard = memo(function AnimatedBusinessCard({ index, busines
         ],
       }}
     >
-      <BusinessCard business={business} style={styles.cardWrap} />
+      <BusinessCard business={business} style={[styles.cardWrap, { width: cardWidth }]} />
     </Animated.View>
   );
 });
@@ -59,6 +60,8 @@ export function HomeBusinessRow<T extends BusinessListItemDto | FeaturedBusiness
   emptyMessage,
   contentPaddingBottom = 18,
 }: Props<T>) {
+  const { width: windowWidth } = useWindowDimensions();
+  const cardWidth = windowWidth - homeTokens.pageGutter - 14 - 40;
   const resolvedContentPaddingBottom = Math.max(contentPaddingBottom, 12);
 
   if (loading) {
@@ -70,7 +73,7 @@ export function HomeBusinessRow<T extends BusinessListItemDto | FeaturedBusiness
         contentContainerStyle={[styles.content, { paddingBottom: resolvedContentPaddingBottom }]}
       >
         {[1, 2, 3].map((item) => (
-          <View key={`business-skeleton-${item}`} style={styles.cardWrap}>
+          <View key={`business-skeleton-${item}`} style={[styles.cardWrap, { width: cardWidth }]}>
             <SkeletonCard />
           </View>
         ))}
@@ -104,7 +107,7 @@ export function HomeBusinessRow<T extends BusinessListItemDto | FeaturedBusiness
       contentContainerStyle={[styles.content, { paddingBottom: resolvedContentPaddingBottom }]}
     >
       {items.map((item, index) => (
-        <AnimatedBusinessCard key={item.id} index={index} business={item} />
+        <AnimatedBusinessCard key={item.id} index={index} business={item} cardWidth={cardWidth} />
       ))}
     </ScrollView>
   );
@@ -122,7 +125,7 @@ const styles = StyleSheet.create({
     backgroundColor: homeTokens.offWhite,
   },
   cardWrap: {
-    width: 320,
+    width: 340,
   },
   messageCard: {
     marginHorizontal: homeTokens.pageGutter,

@@ -11,6 +11,7 @@ type Props = {
   rating: number;
   reviewText?: string | null;
   reviewTitle?: string | null;
+  tags?: string[] | null;
   createdAt: string;
   onViewClick: () => void;
   onEdit: () => void;
@@ -32,7 +33,7 @@ function StarRow({ rating }: { rating: number }) {
           <Ionicons
             key={`rating-star-${index}`}
             name={active ? 'star' : 'star-outline'}
-            size={14}
+            size={16}
             color={active ? '#F5D547' : '#D1D5DB'}
           />
         );
@@ -48,6 +49,7 @@ export function ProfileReviewItem({
   rating,
   reviewText,
   reviewTitle,
+  tags,
   createdAt,
   onViewClick,
   onEdit,
@@ -98,6 +100,20 @@ export function ProfileReviewItem({
               {reviewText}
             </Text>
           ) : null}
+          {tags && tags.length > 0 ? (
+            <View style={styles.tagsRow}>
+              {tags.slice(0, 4).map((tag, i) => (
+                <View key={i} style={styles.tagPill}>
+                  <Text style={styles.tagText}>{tag}</Text>
+                </View>
+              ))}
+              {tags.length > 4 ? (
+                <View style={styles.tagPill}>
+                  <Text style={styles.tagText}>+{tags.length - 4} more</Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
         </View>
       ) : null}
 
@@ -115,9 +131,9 @@ export function ProfileReviewItem({
 const styles = StyleSheet.create({
   wrap: {
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(125,155,118,0.16)',
-    paddingVertical: 14,
-    gap: 10,
+    borderBottomColor: 'rgba(125,155,118,0.10)',
+    paddingVertical: 16,
+    gap: 12,
   },
   headerRow: {
     flexDirection: 'row',
@@ -144,7 +160,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   businessName: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: '#2D2D2D',
   },
@@ -159,9 +175,9 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   ratingText: {
-    fontSize: 12,
+    fontSize: 14,
     color: 'rgba(45,45,45,0.7)',
-    fontWeight: '600',
+    fontWeight: '500',
   },
   actionRow: {
     flexDirection: 'row',
@@ -175,25 +191,46 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(229,224,229,0.72)',
-    borderWidth: 1,
-    borderColor: 'rgba(45,45,45,0.08)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    elevation: 1,
   },
   contentWrap: {
-    marginLeft: 58,
+    marginLeft: 60,
     gap: 4,
   },
   reviewTitle: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
     color: '#2D2D2D',
   },
   reviewText: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: 'rgba(45,45,45,0.84)',
+    fontSize: 14,
+    lineHeight: 20,
+    color: 'rgba(45,45,45,0.80)',
+  },
+  tagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
+  tagPill: {
+    borderRadius: 999,
+    backgroundColor: 'rgba(157,171,155,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(125,155,118,0.20)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  tagText: {
+    fontSize: 12,
+    color: '#7D9B76',
   },
   footerRow: {
-    marginLeft: 58,
+    marginLeft: 60,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -205,9 +242,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   viewCtaText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#722F37',
-    fontWeight: '700',
+    fontWeight: '500',
   },
   dateText: {
     fontSize: 12,

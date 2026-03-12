@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '../Typography';
-import { businessDetailColors, businessDetailSpacing } from './styles';
+import { businessDetailColors, businessDetailSpacing, CARD_GRADIENT, cardShadowStyle } from './styles';
 import { calculateOpenStatus, getHoursRows, normalizeHours, normalizePriceRange } from './utils';
 
 type Props = {
@@ -25,7 +26,7 @@ export function BusinessDetailsCard({ priceRange, verified, hours, openingHours,
   const priceInfo = useMemo(() => normalizePriceRange(priceRange ?? undefined), [priceRange]);
 
   return (
-    <View style={styles.card}>
+    <LinearGradient colors={CARD_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.card}>
       <Text style={styles.heading}>Business Details</Text>
 
       <View style={styles.row}>
@@ -101,24 +102,21 @@ export function BusinessDetailsCard({ priceRange, verified, hours, openingHours,
           </Text>
         </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
     borderRadius: businessDetailSpacing.cardRadius,
-    borderWidth: 1,
-    borderColor: businessDetailColors.borderSoft,
-    backgroundColor: businessDetailColors.cardTint,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    padding: businessDetailSpacing.cardPadding,
     gap: 14,
-  },
+    ...cardShadowStyle,
+  } as object,
   heading: {
     color: businessDetailColors.charcoal,
-    fontSize: 19,
-    fontWeight: '700',
+    fontSize: businessDetailSpacing.headingFontSize,
+    fontWeight: businessDetailSpacing.headingFontWeight,
   },
   row: {
     flexDirection: 'row',

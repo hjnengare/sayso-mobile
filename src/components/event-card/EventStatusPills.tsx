@@ -48,10 +48,6 @@ function getPills(item: EventSpecialListItemDto): Pill[] {
 export function EventStatusPills({ item }: Props) {
   const pills = getPills(item);
 
-  if (pills.length === 0) {
-    return null;
-  }
-
   return (
     <View style={styles.wrap}>
       {pills.map((pill, index) => (
@@ -84,26 +80,27 @@ const styles = StyleSheet.create({
   wrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 12,
+    gap: 6,
+    marginTop: 10,
+    minHeight: 26,
   },
   pill: {
     borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   pillLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
   sagePill: {
-    backgroundColor: 'rgba(125, 155, 118, 0.12)',
+    backgroundColor: 'rgba(157,171,155,0.10)',
   },
   sageLabel: {
-    color: '#6B8A64',
+    color: '#7D9B76',
   },
   coralPill: {
-    backgroundColor: 'rgba(114, 47, 55, 0.1)',
+    backgroundColor: 'rgba(114,47,55,0.10)',
   },
   coralLabel: {
     color: '#722F37',

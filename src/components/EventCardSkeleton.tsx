@@ -1,5 +1,5 @@
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { CardSurface } from './CardSurface';
+import { LinearGradient } from 'expo-linear-gradient';
 import { CARD_CTA_RADIUS, CARD_RADIUS } from '../styles/radii';
 import { SkeletonBlock } from './SkeletonBlock';
 
@@ -7,10 +7,12 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
+const CARD_GRADIENT = ['#9DAB9B', '#9DAB9B', 'rgba(157,171,155,0.95)'] as const;
+
 export function EventCardSkeleton({ style }: Props) {
   return (
-    <View style={style}>
-      <CardSurface radius={CARD_RADIUS} material="frosted" contentStyle={styles.frostedSurface}>
+    <View style={[styles.card, style]}>
+      <LinearGradient colors={CARD_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cardSurface}>
         <SkeletonBlock style={styles.media} variant="strong">
           <SkeletonBlock style={styles.ribbon} variant="soft" />
           <SkeletonBlock style={styles.ratingBadge} />
@@ -26,16 +28,26 @@ export function EventCardSkeleton({ style }: Props) {
           <SkeletonBlock style={styles.reviewCount} />
           <SkeletonBlock style={styles.cta} variant="strong" />
         </View>
-      </CardSurface>
+      </LinearGradient>
     </View>
   );
 }
 const styles = StyleSheet.create({
-  frostedSurface: {
-    backgroundColor: 'rgba(157,171,155,0.72)',
+  card: {
+    borderRadius: CARD_RADIUS,
+    overflow: 'hidden',
+    backgroundColor: '#9DAB9B',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 6,
+  },
+  cardSurface: {
+    width: '100%',
   },
   media: {
-    height: 220,
+    height: 280,
   },
   ribbon: {
     position: 'absolute',
@@ -58,7 +70,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 14,
-    backgroundColor: 'rgba(157,171,155,0.32)',
+    backgroundColor: 'rgba(157,171,155,0.10)',
   },
   title: {
     height: 18,

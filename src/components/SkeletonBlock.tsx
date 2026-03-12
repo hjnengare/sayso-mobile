@@ -119,26 +119,25 @@ export function SkeletonBlock({
 const styles = StyleSheet.create({
   base: {
     overflow: 'hidden',
-    backgroundColor: '#E5E7EB',
     borderRadius: 10,
   },
   fill: {
-    backgroundColor: '#F2F4F7',
+    backgroundColor: 'rgba(229, 224, 229, 0.50)',
   },
   shimmer: {
     position: 'absolute',
     top: -14,
     bottom: -14,
     width: '44%',
-    backgroundColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255, 255, 255, 0.20)',
   },
   default: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: 'rgba(45, 45, 45, 0.10)',
   },
   soft: {
-    backgroundColor: '#ECEFF3',
+    backgroundColor: 'rgba(45, 45, 45, 0.05)',
   },
   strong: {
-    backgroundColor: '#DCE1E8',
+    backgroundColor: 'rgba(45, 45, 45, 0.18)',
   },
 });

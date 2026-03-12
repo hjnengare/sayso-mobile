@@ -39,7 +39,7 @@ const EVENT_SPORT_KEYWORDS = [
 
 export type EventCountdownState = {
   show: boolean;
-  status: 'upcoming' | 'live' | 'ended';
+  status: 'upcoming' | 'live' | 'ended' | 'unknown';
   days: number;
   hours: number;
   minutes: number;
@@ -254,8 +254,8 @@ export function getEventCountdownState(item: EventSpecialListItemDto): EventCoun
 
   if (!startDate) {
     return {
-      show: false,
-      status: 'ended',
+      show: true,
+      status: 'unknown',
       days: 0,
       hours: 0,
       minutes: 0,
@@ -268,7 +268,7 @@ export function getEventCountdownState(item: EventSpecialListItemDto): EventCoun
 
   if (now > eventEnd) {
     return {
-      show: false,
+      show: true,
       status: 'ended',
       days: 0,
       hours: 0,
@@ -278,7 +278,7 @@ export function getEventCountdownState(item: EventSpecialListItemDto): EventCoun
 
   if (now >= eventStart && now <= eventEnd) {
     return {
-      show: false,
+      show: true,
       status: 'live',
       days: 0,
       hours: 0,
@@ -287,10 +287,9 @@ export function getEventCountdownState(item: EventSpecialListItemDto): EventCoun
   }
 
   const diff = eventStart - now;
-  const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-  if (diff <= 0 || diff > thirtyDaysMs) {
+  if (diff <= 0) {
     return {
-      show: false,
+      show: true,
       status: 'upcoming',
       days: 0,
       hours: 0,

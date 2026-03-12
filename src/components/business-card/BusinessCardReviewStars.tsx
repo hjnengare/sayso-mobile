@@ -23,8 +23,8 @@ export function BusinessCardReviewStars({ rating = 0 }: Props) {
     <View style={styles.wrap} pointerEvents="none">
       {Array.from({ length: 5 }).map((_, index) => {
         const starName = getStarName(safeRating, index);
-        const color = starName === 'star-outline' ? 'rgba(45, 55, 72, 0.42)' : '#2D3748';
-        return <Ionicons key={`featured-star-${index}`} name={starName} size={14} color={color} />;
+        const color = starName === 'star-outline' ? 'rgba(45,45,45,0.42)' : '#2D2D2D';
+        return <Ionicons key={`featured-star-${index}`} name={starName} size={18} color={color} />;
       })}
     </View>
   );
@@ -36,6 +36,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 3,
+    gap: 2.5,
   },
 });

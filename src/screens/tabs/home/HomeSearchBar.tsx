@@ -17,6 +17,10 @@ type Props = {
   onChangeText: (value: string) => void;
   onClear: () => void;
   isFetching?: boolean;
+  onFocus?: () => void;
+  onBlur?: () => void;
+  activeFilterCount?: number;
+  onFilterPress?: () => void;
 };
 
 const placeholderPhrases = [
@@ -27,7 +31,16 @@ const placeholderPhrases = [
 
 const AnimatedText = Animated.createAnimatedComponent(Text);
 
-export function HomeSearchBar({ value, onChangeText, onClear, isFetching = false }: Props) {
+export function HomeSearchBar({
+  value,
+  onChangeText,
+  onClear,
+  isFetching = false,
+  onFocus,
+  onBlur,
+  activeFilterCount = 0,
+  onFilterPress,
+}: Props) {
   const [focused, setFocused] = useState(false);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const placeholderProgress = useRef(new Animated.Value(0)).current;
@@ -131,11 +144,29 @@ export function HomeSearchBar({ value, onChangeText, onClear, isFetching = false
           autoCorrect={false}
           returnKeyType="search"
           clearButtonMode="never"
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onFocus={() => { setFocused(true); onFocus?.(); }}
+          onBlur={() => { setFocused(false); onBlur?.(); }}
         />
       </View>
       {isFetching ? <SkeletonBlock style={styles.fetchingIndicator} /> : null}
+
+      {/* Filter button — visible when search is active */}
+      {value.length > 0 ? (
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={onFilterPress}
+          activeOpacity={0.8}
+          accessibilityLabel="Search filters"
+        >
+          <Ionicons name="options-outline" size={17} color={activeFilterCount > 0 ? homeTokens.coral : homeTokens.charcoal} />
+          {activeFilterCount > 0 ? (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+            </View>
+          ) : null}
+        </TouchableOpacity>
+      ) : null}
+
       {value.length > 0 ? (
         <TouchableOpacity style={styles.clearButton} onPress={onClear} activeOpacity={0.8}>
           <Ionicons name="close" size={16} color={homeTokens.charcoal} />
@@ -200,6 +231,30 @@ const styles = StyleSheet.create({
     color: homeTokens.textTertiary,
     width: '100%',
   },
+  filterButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 6,
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 14,
+    height: 14,
+    borderRadius: 999,
+    backgroundColor: homeTokens.coral,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
   clearButton: {
     width: 28,
     height: 28,
@@ -207,7 +262,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: homeTokens.offWhite,
-    marginLeft: 8,
+    marginLeft: 4,
   },
   fetchingIndicator: {
     width: 16,

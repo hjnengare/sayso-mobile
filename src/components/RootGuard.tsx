@@ -39,7 +39,7 @@ const ONBOARDING_STEP_ORDER = {
 
 /**
  * Routes that require an authenticated session.
- * Unauthenticated users attempting to reach these are redirected to /login.
+ * Unauthenticated users attempting to reach these are redirected to /onboarding.
  *
  * Everything NOT in this list is publicly browsable (mirrors web behaviour):
  * home feed, business/event/special detail, leaderboard, trending, etc.
@@ -104,12 +104,12 @@ function routeToOnboardingStep(pathname: string): keyof typeof ONBOARDING_STEP_O
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Stateless routing guard — mirrors web auth/onboarding privileges exactly.
+ * Stateless routing guard — enforces onboarding-first entry while preserving
+ * auth/email/onboarding progression.
  *
- * Unauthenticated users:
- *   • Can browse all public content (home, businesses, events, leaderboard…)
- *   • Are redirected to /login only when touching a private feature
- *   • Stay on landing/auth screens freely
+ * On first app load:
+ *   • Unauthenticated users are funneled to /onboarding
+ *   • Authenticated users are normalized to /home (except auth bridge routes)
  *
  * Authenticated users go through role → email-verification → onboarding checks,
  * then land on /home (or resume at their correct onboarding step).
@@ -122,6 +122,7 @@ export function RootGuard({ children }: { children: React.ReactNode }) {
 
   // Prevent the same redirect from firing multiple times per pathname
   const lastRedirectRef = useRef<string | null>(null);
+  const hasHandledInitialRoutingRef = useRef(false);
 
   useEffect(() => {
     // Wait for both auth + profile to fully resolve before making any decision
@@ -137,13 +138,29 @@ export function RootGuard({ children }: { children: React.ReactNode }) {
       router.replace(target as never);
     }
 
+    if (!hasHandledInitialRoutingRef.current) {
+      hasHandledInitialRoutingRef.current = true;
+
+      // Keep auth callback/error bridge routes intact.
+      if (!isAuthBridge) {
+        if (!session && pathname !== routes.onboarding()) {
+          navigate(routes.onboarding());
+          return;
+        }
+        if (session && pathname !== routes.home()) {
+          navigate(routes.home());
+          return;
+        }
+      }
+    }
+
     // ── Case 1: No session ────────────────────────────────────────────────────
     if (!session) {
-      // Block access to routes that need auth; everything else is freely browsable
+      // Block access to authenticated-only features
       if (isPrivate(pathname)) {
-        navigate(routes.login());
+        navigate(routes.onboarding());
       }
-      // Landing / auth-bridge / onboarding routes — stay where you are
+      // Public routes remain available to guest users once they pass onboarding.
       return;
     }
 

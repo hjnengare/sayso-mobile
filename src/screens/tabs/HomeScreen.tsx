@@ -155,6 +155,12 @@ export default function HomeScreen() {
     router.push(routes.reviewer(reviewer.id) as never);
   };
 
+  const navigateToBusinessFromSuggestion = useCallback((id: string) => {
+    router.push(routes.businessDetail(id) as never);
+  }, [router]);
+
+  const activeFilterCount = (minRating != null ? 1 : 0) + (distanceKm != null ? 1 : 0);
+
   const setScrollTopVisible = useCallback((visible: boolean) => {
     if (scrollTopVisibleRef.current === visible) {
       return;
@@ -298,6 +304,8 @@ export default function HomeScreen() {
       reviewers={{ reviewers: reviewers.reviewers, mode: reviewers.mode, isLoading: reviewers.isLoading, error: reviewers.error }}
       recentReviews={{ reviews: recentReviews.reviews, isLoading: recentReviews.isLoading, error: recentReviews.error }}
       featured={{ featuredBusinesses: featured.featuredBusinesses, isLoading: featured.isLoading, error: featured.error }}
+      activeFilterCount={activeFilterCount}
+      onSelectSuggestion={navigateToBusinessFromSuggestion}
       navigateToReviewer={navigateToReviewer}
       onNavigateForYou={() => router.push(routes.forYou() as never)}
       onNavigateTrending={() => router.push(routes.trending() as never)}
