@@ -256,8 +256,13 @@ export function HomeCommunityHighlightsSection({
           <View style={styles.pill}>
             <Text style={styles.pillText}>Featured Businesses</Text>
           </View>
-          <TouchableOpacity style={styles.subsectionActionButton} onPress={onPressFeatured} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={[styles.subsectionActionButton, styles.subsectionActionButtonWithIcon]}
+            onPress={onPressFeatured}
+            activeOpacity={0.8}
+          >
             <Text style={styles.subsectionAction}>See More</Text>
+            <Ionicons name="arrow-forward" size={14} color={homeTokens.charcoal} style={styles.subsectionActionIcon} />
           </TouchableOpacity>
         </View>
 
@@ -316,6 +321,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 6,
+  },
+  subsectionActionButtonWithIcon: {
+    flexDirection: 'row',
+    gap: 2,
+  },
+  subsectionActionIcon: {
+    marginTop: 1,
   },
   row: {
     overflow: 'visible',

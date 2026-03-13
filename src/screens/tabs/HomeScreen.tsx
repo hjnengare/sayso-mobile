@@ -14,11 +14,13 @@ import { useTrending } from '../../hooks/useTrending';
 import { routes } from '../../navigation/routes';
 import { useGlobalScrollToTop } from '../../hooks/useGlobalScrollToTop';
 import { useRealtimeQueryInvalidation } from '../../hooks/useRealtimeQueryInvalidation';
+import { useFilters } from '../../providers/FiltersProvider';
 import { HomeScreenView } from './home-screen/HomeScreenView';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuthSession();
+  const { minRating, distanceKm, setMinRating, setDistanceKm, clearFilters } = useFilters();
   const headerProgress = useRef(new Animated.Value(1)).current;
   const headerCollapsedRef = useRef(false);
   const homeFeedRef = useRef<ScrollView>(null);
@@ -27,8 +29,6 @@ export default function HomeScreen() {
 
   const [searchInput, setSearchInput] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [minRating, setMinRating] = useState<number | null>(null);
-  const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationDenied, setLocationDenied] = useState(false);
@@ -92,10 +92,10 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (debouncedQuery.length < 2) {
-      setMinRating(null);
-      setDistanceKm(null);
+      clearFilters();
       setLocationDenied(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedQuery]);
 
   const handleRefresh = async () => {

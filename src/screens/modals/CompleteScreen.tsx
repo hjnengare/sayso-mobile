@@ -11,28 +11,80 @@ import { apiFetch } from '../../lib/api';
 import { routes } from '../../navigation/routes';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const PARTICLE_COUNT = 54;
-const FALL_DISTANCE = SCREEN_HEIGHT + 120;
+const PARTICLE_COUNT = 180;
+const FALL_DISTANCE = SCREEN_HEIGHT + 160;
 
-function Particle({ delay, x, color, size }: { delay: number; x: number; color: string; size: number }) {
-  const y = useRef(new Animated.Value(-20)).current;
+type ParticleShape = 'square' | 'circle' | 'rect';
+
+function Particle({
+  delay,
+  x,
+  color,
+  size,
+  drift,
+  fallDuration,
+  shape,
+  spinMultiplier,
+}: {
+  delay: number;
+  x: number;
+  color: string;
+  size: number;
+  drift: number;
+  fallDuration: number;
+  shape: ParticleShape;
+  spinMultiplier: number;
+}) {
+  const y = useRef(new Animated.Value(-size)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const rotation = useRef(new Animated.Value(0)).current;
+  const translateX = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const anim = Animated.sequence([
       Animated.delay(delay),
       Animated.parallel([
-        Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-        Animated.timing(y, { toValue: FALL_DISTANCE, duration: 1800, useNativeDriver: true }),
-        Animated.timing(rotation, { toValue: 1, duration: 1800, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.timing(y, {
+          toValue: FALL_DISTANCE,
+          duration: fallDuration,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.timing(rotation, {
+          toValue: spinMultiplier,
+          duration: fallDuration,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.sequence([
+          Animated.timing(translateX, {
+            toValue: drift,
+            duration: fallDuration * 0.5,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateX, {
+            toValue: -drift * 0.6,
+            duration: fallDuration * 0.5,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
       ]),
-      Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 0, duration: 180, useNativeDriver: true }),
     ]);
     anim.start();
-  }, [delay, opacity, rotation, y]);
+  }, [delay, drift, fallDuration, opacity, rotation, spinMultiplier, translateX, y]);
 
-  const spin = rotation.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  const spin = rotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', `${360 * spinMultiplier}deg`],
+  });
+
+  const width = shape === 'rect' ? size * 0.4 : size;
+  const height = shape === 'rect' ? size * 1.8 : size;
+  const borderRadius = shape === 'circle' ? size / 2 : shape === 'rect' ? 2 : size / 5;
 
   return (
     <Animated.View
@@ -40,12 +92,12 @@ function Particle({ delay, x, color, size }: { delay: number; x: number; color: 
         position: 'absolute',
         top: 0,
         left: x,
-        width: size,
-        height: size,
-        borderRadius: size / 4,
+        width,
+        height,
+        borderRadius,
         backgroundColor: color,
         opacity,
-        transform: [{ translateY: y }, { rotate: spin }],
+        transform: [{ translateY: y }, { translateX }, { rotate: spin }],
       }}
       pointerEvents="none"
     />
@@ -65,9 +117,21 @@ const CONFETTI_COLORS = [
   ONBOARDING_TOKENS.coral,
   ONBOARDING_TOKENS.sage,
   ONBOARDING_TOKENS.offWhite,
-  'rgba(114,47,55,0.8)',
-  'rgba(157,171,155,0.9)',
+  '#722F37',
+  '#9DAB9B',
+  '#F4C842',
+  '#E8735A',
+  '#A8D5A2',
+  '#F9E4B7',
+  '#C9A0DC',
+  '#FFB347',
+  '#87CEEB',
+  '#FF6B9D',
+  '#B5EAD7',
+  '#FFDAC1',
 ];
+
+const PARTICLE_SHAPES: ParticleShape[] = ['square', 'circle', 'rect'];
 
 export default function CompleteScreen() {
   const router = useRouter();
@@ -86,10 +150,14 @@ export default function CompleteScreen() {
     () =>
       Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
         key: i,
-        delay: Math.random() * 1000,
-        x: Math.random() * (SCREEN_WIDTH + 40) - 20,
+        delay: Math.random() * 1800,
+        x: Math.random() * (SCREEN_WIDTH + 60) - 30,
         color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-        size: 5 + Math.random() * 9,
+        size: 6 + Math.random() * 11,
+        drift: (Math.random() - 0.5) * 80,
+        fallDuration: 1600 + Math.random() * 1400,
+        shape: PARTICLE_SHAPES[Math.floor(Math.random() * PARTICLE_SHAPES.length)],
+        spinMultiplier: 1 + Math.floor(Math.random() * 3),
       })),
     []
   );
@@ -150,7 +218,7 @@ export default function CompleteScreen() {
 
     const timer = setTimeout(() => {
       void handleContinue();
-    }, 2000);
+    }, 3500);
 
     return () => clearTimeout(timer);
   }, [badgeOpacity, badgeY, contentOpacity, contentY, handleContinue, reducedMotion]);
@@ -211,6 +279,10 @@ export default function CompleteScreen() {
                   x={particle.x}
                   color={particle.color}
                   size={particle.size}
+                  drift={particle.drift}
+                  fallDuration={particle.fallDuration}
+                  shape={particle.shape}
+                  spinMultiplier={particle.spinMultiplier}
                 />
               ))}
             </View>

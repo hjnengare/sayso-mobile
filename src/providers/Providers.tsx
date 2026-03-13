@@ -6,6 +6,7 @@ import { ProfileProvider } from './ProfileProvider';
 import { NotificationsProvider } from './NotificationsProvider';
 import { SecurityProvider } from './SecurityProvider';
 import { ScrollToTopProvider } from './ScrollToTopProvider';
+import { FiltersProvider } from './FiltersProvider';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -15,7 +16,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <AuthProvider>
             <ProfileProvider>
               <NotificationsProvider>
-                <ScrollToTopProvider>{children}</ScrollToTopProvider>
+                <FiltersProvider>
+                  <ScrollToTopProvider>{children}</ScrollToTopProvider>
+                </FiltersProvider>
               </NotificationsProvider>
             </ProfileProvider>
           </AuthProvider>

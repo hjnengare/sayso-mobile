@@ -6,6 +6,7 @@ import { EventCard } from '../../../components/EventCard';
 import { EventCardSkeleton } from '../../../components/EventCardSkeleton';
 import { EmptyState } from '../../../components/EmptyState';
 import { TransitionItem } from '../../../components/motion/TransitionItem';
+import { ScrollToTopFab } from '../../../components/ScrollToTopFab';
 import { Text } from '../../../components/Typography';
 import { FeedFooter } from '../../../components/feed/FeedFooter';
 import { LoadMoreButton } from '../../../components/feed/LoadMoreButton';
@@ -123,6 +124,8 @@ type Props = {
   isRefreshing: boolean;
   onRefresh: () => void;
   onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  showBackToTop: boolean;
+  onScrollToTop: () => void;
 };
 
 function EventsSpecialsFeedViewComponent({
@@ -145,6 +148,8 @@ function EventsSpecialsFeedViewComponent({
   isRefreshing,
   onRefresh,
   onScroll,
+  showBackToTop,
+  onScrollToTop,
 }: Props) {
   return (
     <View style={s.container}>
@@ -180,6 +185,7 @@ function EventsSpecialsFeedViewComponent({
         scrollEventThrottle={32}
         showsVerticalScrollIndicator={false}
       />
+      <ScrollToTopFab visible={showBackToTop} onPress={onScrollToTop} />
     </View>
   );
 }

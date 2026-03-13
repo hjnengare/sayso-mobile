@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
@@ -93,9 +92,6 @@ export default function LeaderboardScreen() {
   const scrollRef = useRef<ScrollView | null>(null);
   const scrollTopVisibleRef = useRef(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const headerCollapsedRef = useRef(false);
-  const [headerCollapsed, setHeaderCollapsed] = useState(false);
-  const headerProgress = useRef(new Animated.Value(0)).current;
   const setScrollTopVisible = useCallback((v: boolean) => {
     if (scrollTopVisibleRef.current === v) return;
     scrollTopVisibleRef.current = v;
@@ -108,26 +104,10 @@ export default function LeaderboardScreen() {
 
   useGlobalScrollToTop({ visible: showScrollTop, enabled: true, onScrollToTop: handleScrollToTop });
 
-  const setHeaderState = useCallback((collapsed: boolean) => {
-    if (headerCollapsedRef.current === collapsed) return;
-    headerCollapsedRef.current = collapsed;
-    setHeaderCollapsed(collapsed);
-    Animated.spring(headerProgress, {
-      toValue: collapsed ? 1 : 0,
-      damping: 28,
-      mass: 0.8,
-      stiffness: 300,
-      overshootClamping: true,
-      useNativeDriver: false,
-    }).start();
-  }, [headerProgress]);
-
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const y = e.nativeEvent.contentOffset.y;
     setScrollTopVisible(y > 300);
-    if (y > 52) setHeaderState(true);
-    else if (y < 18) setHeaderState(false);
-  }, [setHeaderState, setScrollTopVisible]);
+  }, [setScrollTopVisible]);
 
   const handleBack = () => {
     if (router.canGoBack()) { router.back(); return; }
@@ -141,13 +121,6 @@ export default function LeaderboardScreen() {
     { key: 'saved', label: 'Saved', onPress: () => router.push(routes.saved() as never) },
     { key: 'profile', label: 'Profile', onPress: () => router.push(routes.profile() as never) },
   ], [router]);
-
-  const headerBg = headerProgress.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['transparent', CARD_BG],
-  });
-  const headerElevation = headerProgress.interpolate({ inputRange: [0, 1], outputRange: [0, 8] });
-  const headerShadowOpacity = headerProgress.interpolate({ inputRange: [0, 1], outputRange: [0, 0.12] });
 
   // Business filtering + sorting
   const availableInterestIds = useMemo(() => {
@@ -185,13 +158,13 @@ export default function LeaderboardScreen() {
       <Stack.Screen options={{ headerShown: false }} />
 
       {/* Sticky header */}
-      <Animated.View
+      <View
         style={[
           s.stickyHeader,
           {
-            backgroundColor: headerBg,
-            elevation: headerElevation,
-            shadowOpacity: headerShadowOpacity,
+            backgroundColor: CORAL,
+            elevation: 8,
+            shadowOpacity: 0.12,
           },
         ]}
       >
@@ -200,9 +173,9 @@ export default function LeaderboardScreen() {
           onPressNotifications={() => router.push(routes.notifications() as never)}
           onPressMessages={() => router.push(routes.dmInbox() as never)}
           menuItems={menuItems}
-          collapsed={headerCollapsed}
+          collapsed={true}
         />
-      </Animated.View>
+      </View>
 
       <ScrollView
         ref={scrollRef}
@@ -423,8 +396,8 @@ const s = StyleSheet.create({
   // Hero
   hero: {
     paddingHorizontal: businessDetailSpacing.pageGutter,
-    paddingTop: 20,
-    paddingBottom: 16,
+    paddingTop: 28,
+    paddingBottom: 28,
     alignItems: 'center',
   },
   heroTitle: {

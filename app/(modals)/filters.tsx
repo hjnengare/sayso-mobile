@@ -1,10 +1,3 @@
-import { PlaceholderScreen } from '../../src/screens/shared/PlaceholderScreen';
+import FiltersScreen from '../../src/screens/modals/FiltersScreen';
 
-export default function FiltersRoute() {
-  return (
-    <PlaceholderScreen
-      title="Filters"
-      description="This sheet-style modal route is ready for shared search, category, and feed filters."
-    />
-  );
-}
+export default FiltersScreen;
