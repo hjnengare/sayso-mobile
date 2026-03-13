@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep -l \"export.*GET\\\\|export.*POST\\\\|export.*PUT\\\\|export.*DELETE\")",
+      "Bash(./node_modules/.bin/expo install react-native-maps expo-image)",
+      "Bash(npm install)",
+      "Bash(npm run build)",
+      "Bash(npm install expo-asset)",
+      "Bash(npm start)",
+      "Bash(npm install expo-asset@~11.0.5)",
+      "Bash(node_modules/.bin/expo start --non-interactive)",
+      "Bash(npm install react-native-web@~0.19.0 @expo/metro-runtime)",
+      "Bash(npm install @expo-google-fonts/urbanist)",
+      "WebFetch(domain:slimicons.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(for d in \"c:\\\\Users\\\\HilarioNengare\\\\Projects\\\\sayso_mobile\\\\assets\\\\businessImagePlaceholders\"/*/)",
+      "Bash(do echo \"$d:\")",
+      "Read(//c/Users/HilarioNengare/Projects/sayso_mobile/**)",
+      "Bash(done)",
+      "Bash(npx tsc --noEmit --project tsconfig.json)",
+      "Bash(find /Users/hilarionengare/sayso-web/src/app -path \"*/\\(interests|subcategories|deal-breakers|complete\\)*\" -name \"page.tsx\")",
+      "Bash(npx tsc --noEmit)",
+      "Bash(grep -l \"ScrollView\\\\|FlatList\\\\|FlashList\" /Users/hilarionengare/sayso-mobile/app/\\\\\\(stack\\\\\\)/*.tsx)",
+      "Bash(ls -la \"/Users/hilarionengare/sayso-mobile/app/\\(stack\\)/\")",
+      "Bash(git -C /Users/hilarionengare/sayso-mobile remote -v)",
+      "Bash(git add app/\\\\\\(modals\\\\\\)/complete.tsx app/\\\\\\(modals\\\\\\)/onboarding/index.tsx app/\\\\\\(modals\\\\\\)/register.tsx app/\\\\\\(stack\\\\\\)/deal-breakers.tsx app/\\\\\\(stack\\\\\\)/events-specials.tsx app/\\\\\\(stack\\\\\\)/for-you.tsx app/\\\\\\(stack\\\\\\)/interests.tsx app/\\\\\\(stack\\\\\\)/subcategories.tsx src/components/StackPageHeader.tsx src/components/business-detail/BusinessPageHeader.tsx src/components/business-detail/BusinessReviewsSection.tsx src/components/event-detail/EventSpecialReviewsSection.tsx src/components/feed/BusinessFeed.tsx src/screens/modals/LoginScreen.tsx src/screens/shared/EventsSpecialsFeedScreen.tsx src/screens/stack/BusinessScreen.tsx src/screens/stack/EventSpecialScreen.tsx src/screens/stack/TrendingScreen.tsx src/screens/tabs/HomeScreen.tsx src/screens/tabs/SearchScreen.tsx src/screens/tabs/home/HomeCommunityHighlightsSection.tsx src/components/onboarding/ src/components/review-card/ src/components/reviewer-card/ src/hooks/useReviewHelpful.ts src/lib/anonymousClient.ts src/screens/modals/CompleteScreen.tsx src/screens/modals/OnboardingScreen.tsx src/screens/stack/DealBreakersScreen.tsx src/screens/stack/InterestsScreen.tsx src/screens/stack/SubcategoriesScreen.tsx)",
+      "Bash(git commit:*)",
+      "Bash(git push origin main)",
+      "Bash(git remote set-url origin git@github.com:hjnengare/sayso-mobile.git)",
+      "Bash(ssh -T git@github.com)",
+      "Bash(find /Users/hilarionengare/sayso-web -name topContributor* -type f)",
+      "Bash(xargs cat:*)",
+      "Bash(grep -rn \"profilePicture\\\\|avatar_url\" /Users/hilarionengare/sayso-web/src/app/api/reviewers/[id]/route.ts)",
+      "Bash(find /Users/hilarionengare/sayso-web/src/app/api -path *reviews/recent* -name *.ts)",
+      "Bash(find /Users/hilarionengare/sayso-web -name useReviewerProfile* -o -name GoldBanner* -o -name ReviewsList*)",
+      "Bash(find /Users/hilarionengare/sayso-web -name ReviewItem* -o -name Footer*)",
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
+      "Bash(find /Users/hilarionengare/sayso-web -name ReviewerProfileSkeleton* -o -name tailwind.config*)",
+      "Bash(find /Users/hilarionengare/sayso-web/src -path */atoms/Text.tsx -o -path */atoms/Badge.tsx -o -path */Realtime/RealtimeIndicators.tsx)",
+      "Bash(find /Users/hilarionengare/sayso-web -path */api/reviewers/[id]* -type f)"
+    ]
+  }
+}

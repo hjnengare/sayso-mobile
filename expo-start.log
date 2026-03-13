@@ -1,0 +1,10 @@
+
+> sayso-mobile@0.1.0 start
+> expo start --offline --port 54829
+
+Networking has been disabled
+Starting project at C:\Users\HilarioNengare\Projects\sayso-mobile\sayso-mobile
+Starting Metro Bundler
+Skipping dependency validation in offline mode
+Waiting on http://localhost:54829
+Logs for your project will appear below.
